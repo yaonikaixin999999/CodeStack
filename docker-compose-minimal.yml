@@ -1,0 +1,39 @@
+version: '3.8'
+
+services:
+  # MySQL数据库
+  mysql:
+    image: mysql:8.0
+    container_name: cloudstack_mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: Yaonikaixin999999
+      MYSQL_DATABASE: UserCoding
+      MYSQL_USER: UserCoding
+      MYSQL_PASSWORD: yzbzz189xwmrwxyd
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - cloudstack_network
+    restart: unless-stopped
+
+  # 静态文件服务器（暂时用nginx直接服务）
+  frontend:
+    image: nginx:alpine
+    container_name: cloudstack_frontend
+    ports:
+      - "80:80"
+    volumes:
+      - ./cloudstackpro/dist:/usr/share/nginx/html
+      - ./nginx-simple.conf:/etc/nginx/nginx.conf
+    networks:
+      - cloudstack_network
+    restart: unless-stopped
+
+volumes:
+  mysql_data:
+
+networks:
+  cloudstack_network:
+    driver: bridge

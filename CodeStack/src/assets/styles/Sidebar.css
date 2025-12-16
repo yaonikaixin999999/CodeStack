@@ -1,0 +1,45 @@
+.activity-bar {
+    display: flex;
+    flex-direction: column;
+    background-color: #333;
+    color: white;
+  }
+  
+  .activity-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 40px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+  }
+  
+  .activity-icon.active {
+    background-color: #555;
+  }
+  
+  .activity-icon img {
+    width: 24px;
+    height: 24px;
+  }
+  
+  .spacer {
+    flex-grow: 1;
+  }
+  
+  .settings-menu {
+    position: absolute;
+    background-color: #fff;
+    border: 1px solid #ccc;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    z-index: 1000;
+  }
+  
+  .settings-menu-item {
+    padding: 8px 16px;
+    transition: background-color 0.3s;
+  }
+  
+  .settings-menu-item:hover {
+    background-color: #f0f0f0;
+  }

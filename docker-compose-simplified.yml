@@ -1,0 +1,102 @@
+version: '3.8'
+
+services:
+  # MySQL数据库
+  mysql:
+    image: mysql:8.0
+    container_name: cloudstack_mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: Yaonikaixin999999
+      MYSQL_DATABASE: UserCoding
+      MYSQL_USER: UserCoding
+      MYSQL_PASSWORD: yzbzz189xwmrwxyd
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - cloudstack_network
+
+  # Spring Boot应用
+  springboot:
+    build:
+      context: ./server/demo
+      dockerfile: Dockerfile
+    container_name: cloudstack_springboot
+    ports:
+      - "8080:8080"
+    depends_on:
+      - mysql
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/UserCoding?useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useUnicode=true&characterEncoding=utf8
+      - SPRING_DATASOURCE_USERNAME=UserCoding
+      - SPRING_DATASOURCE_PASSWORD=yzbzz189xwmrwxyd
+    networks:
+      - cloudstack_network
+
+  # Node.js后端服务
+  backend:
+    build:
+      context: ./server/server
+      dockerfile: Dockerfile
+    container_name: cloudstack_backend
+    ports:
+      - "3001:3001"
+    environment:
+      - NODE_ENV=production
+      - REMOTE_HOST=120.46.182.160
+      - REMOTE_USERNAME=root
+      - REMOTE_PASSWORD=Yaonikaixin999999
+    volumes:
+      - /Desktop/User_Coding:/Desktop/User_Coding
+    networks:
+      - cloudstack_network
+
+  # WebSocket服务
+  websocket:
+    build:
+      context: ./yjs-websocket-server
+      dockerfile: Dockerfile
+    container_name: cloudstack_websocket
+    ports:
+      - "1234:1234"
+    networks:
+      - cloudstack_network
+
+  # Vue前端应用
+  frontend:
+    build:
+      context: ./cloudstackpro
+      dockerfile: Dockerfile
+    container_name: cloudstack_frontend
+    ports:
+      - "8081:80"
+    depends_on:
+      - backend
+      - springboot
+    networks:
+      - cloudstack_network
+
+  # Nginx反向代理
+  nginx:
+    image: nginx:alpine
+    container_name: cloudstack_nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf
+    depends_on:
+      - frontend
+      - backend
+      - springboot
+      - websocket
+    networks:
+      - cloudstack_network
+
+volumes:
+  mysql_data:
+
+networks:
+  cloudstack_network:
+    driver: bridge

@@ -1,0 +1,53 @@
+{
+  "name": "cloudstackpro",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "serve": "vue-cli-service serve",
+    "build": "vue-cli-service build",
+    "lint": "vue-cli-service lint",
+    "start": "concurrently \"npm run server\" \"npm run springboot\" \"npm run websocket\" \"npm run front\" --success first",
+    "server": "cd ../server/server && npm run dev",
+    "springboot": "cd ../server/demo && mvn spring-boot:run",
+    "websocket": "cd ../yjs-websocket-server && node server.js",
+    "front": "npm run serve"
+  },
+  "dependencies": {
+    "@monaco-editor/loader": "^1.5.0",
+    "axios": "^1.10.0",
+    "core-js": "^3.8.3",
+    "dompurify": "^3.2.6",
+    "marked": "^16.0.0",
+    "monaco-editor": "^0.52.2",
+    "monaco-editor-vue3": "^0.1.10",
+    "path-browserify": "^1.0.1",
+    "socket.io-client": "^4.8.1",
+    "vue": "^3.2.13",
+    "vue-class-component": "^8.0.0-0",
+    "vue-router": "^4.0.3",
+    "vuex": "^4.0.0",
+    "y-monaco": "^0.1.6",
+    "y-protocols": "^1.0.6",
+    "y-websocket": "^1.4.5",
+    "yjs": "^13.6.27"
+  },
+  "devDependencies": {
+    "@babel/plugin-transform-class-static-block": "^7.22.5",
+    "@types/dompurify": "^3.0.5",
+    "@types/lodash": "^4.17.20",
+    "@vue/cli-plugin-babel": "^5.0.8",
+    "@vue/cli-plugin-router": "~5.0.0",
+    "@vue/cli-plugin-typescript": "~5.0.0",
+    "@vue/cli-plugin-vuex": "~5.0.0",
+    "@vue/cli-service": "~5.0.0",
+    "concurrently": "^9.2.0",
+    "monaco-editor-webpack-plugin": "^7.1.0",
+    "typescript": "^5.8.3"
+  },
+  "browserslist": [
+    "> 1%",
+    "last 2 versions",
+    "not dead",
+    "not ie 11"
+  ]
+}
