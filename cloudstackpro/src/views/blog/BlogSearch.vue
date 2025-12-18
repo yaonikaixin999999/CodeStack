@@ -7,7 +7,7 @@
         <!-- 搜索头部 -->
         <header class="search-header">
           <div class="search-box-large">
-            <img src="@/assets/icons/search.svg" alt="搜索" class="search-icon" />
+            <img src="@/assets/blog/icons/search.svg" alt="搜索" class="search-icon" />
             <input 
               v-model="searchQuery" 
               type="text" 
@@ -30,7 +30,7 @@
         <!-- 热门搜索 -->
         <section class="hot-search" v-if="!hasSearched">
           <h3 class="section-title">
-            <img src="@/assets/icons/trending.svg" alt="热门搜索" class="title-icon" />
+            <img src="@/assets/blog/icons/trending.svg" alt="热门搜索" class="title-icon" />
             热门搜索
           </h3>
           <div class="hot-tags">
@@ -70,14 +70,14 @@
                   <option value="latest">最新</option>
                   <option value="popular">最热</option>
                 </select>
-                <img src="@/assets/icons/chevron-down.svg" alt="展开" class="select-icon" />
+                <img src="@/assets/blog/icons/chevron-down.svg" alt="展开" class="select-icon" />
               </div>
             </div>
             
             <!-- 结果列表 -->
             <div class="results-list">
               <article v-for="result in searchResults" :key="result.id" class="result-item">
-                <router-link :to="`/post/${result.id}`" class="result-content">
+                <router-link :to="`/blog/post/${result.id}`" class="result-content">
                   <div class="result-main">
                     <h3 class="result-title" v-html="highlightText(result.title)"></h3>
                     <p class="result-excerpt" v-html="highlightText(result.excerpt)"></p>
@@ -87,11 +87,11 @@
                         {{ result.author.name }}
                       </span>
                       <span class="meta-item">
-                        <img src="@/assets/icons/clock.svg" alt="时间" class="meta-icon" />
+                        <img src="@/assets/blog/icons/clock.svg" alt="时间" class="meta-icon" />
                         {{ result.createdAt }}
                       </span>
                       <span class="meta-item">
-                        <img src="@/assets/icons/eye.svg" alt="阅读" class="meta-icon" />
+                        <img src="@/assets/blog/icons/eye.svg" alt="阅读" class="meta-icon" />
                         {{ result.views }}
                       </span>
                     </div>
@@ -106,14 +106,14 @@
             <!-- 加载更多 -->
             <div class="load-more" v-if="searchResults.length > 0">
               <button class="load-more-btn" @click="loadMore">
-                <img src="@/assets/icons/chevrons-down.svg" alt="加载更多" class="btn-icon" />
+                <img src="@/assets/blog/icons/chevrons-down.svg" alt="加载更多" class="btn-icon" />
                 加载更多
               </button>
             </div>
             
             <!-- 无结果 -->
             <div class="no-results" v-if="hasSearched && searchResults.length === 0">
-              <img src="@/assets/icons/search.svg" alt="无结果" class="no-results-icon" />
+              <img src="@/assets/blog/icons/search.svg" alt="无结果" class="no-results-icon" />
               <h3>未找到相关结果</h3>
               <p>换个关键词试试？</p>
             </div>
@@ -125,7 +125,7 @@
         <!-- 推荐阅读 -->
         <section class="recommend-section" v-if="!hasSearched">
           <h3 class="section-title">
-            <img src="@/assets/icons/zap.svg" alt="推荐阅读" class="title-icon" />
+            <img src="@/assets/blog/icons/zap.svg" alt="推荐阅读" class="title-icon" />
             推荐阅读
           </h3>
           <div class="recommend-grid">
@@ -146,14 +146,14 @@
 <script lang="ts">
 import { defineComponent, ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
-import BlogHeader from '@/components/BlogHeader.vue'
-import BlogFooter from '@/components/BlogFooter.vue'
-import BlogSidebar from '@/components/BlogSidebar.vue'
-import PostCard from '@/components/PostCard.vue'
+import BlogHeader from '@/components/blog/BlogHeader.vue'
+import BlogFooter from '@/components/blog/BlogFooter.vue'
+import BlogSidebar from '@/components/blog/BlogSidebar.vue'
+import PostCard from '@/components/blog/PostCard.vue'
 
-import bookIcon from '@/assets/icons/book.svg'
-import userIcon from '@/assets/icons/user.svg'
-import categoryIcon from '@/assets/icons/category.svg'
+import bookIcon from '@/assets/blog/icons/book.svg'
+import userIcon from '@/assets/blog/icons/user.svg'
+import categoryIcon from '@/assets/blog/icons/category.svg'
 
 export default defineComponent({
   name: 'BlogSearch',

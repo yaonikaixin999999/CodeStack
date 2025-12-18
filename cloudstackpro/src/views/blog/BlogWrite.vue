@@ -6,16 +6,16 @@
       <div class="content-container">
         <div class="write-header">
           <h1 class="page-title">
-            <img src="@/assets/icons/edit.svg" alt="写文章" class="title-icon" />
+            <img src="@/assets/blog/icons/edit.svg" alt="写文章" class="title-icon" />
             写文章
           </h1>
           <div class="header-actions">
             <button class="btn-draft" @click="saveDraft">
-              <img src="@/assets/icons/bookmark.svg" alt="保存草稿" class="btn-icon" />
+              <img src="@/assets/blog/icons/bookmark.svg" alt="保存草稿" class="btn-icon" />
               保存草稿
             </button>
             <button class="btn-publish" @click="publishPost">
-              <img src="@/assets/icons/upload.svg" alt="发布" class="btn-icon" />
+              <img src="@/assets/blog/icons/upload.svg" alt="发布" class="btn-icon" />
               发布文章
             </button>
           </div>
@@ -68,7 +68,7 @@
               
               <div class="toolbar-group">
                 <button class="toolbar-btn" title="无序列表" @click="insertList('ul')">
-                  <img src="@/assets/icons/menu.svg" alt="无序列表" />
+                  <img src="@/assets/blog/icons/menu.svg" alt="无序列表" />
                 </button>
                 <button class="toolbar-btn" title="有序列表" @click="insertList('ol')">
                   <span class="toolbar-text">1.</span>
@@ -82,13 +82,13 @@
               
               <div class="toolbar-group">
                 <button class="toolbar-btn" title="代码块" @click="insertCode">
-                  <img src="@/assets/icons/code.svg" alt="代码" />
+                  <img src="@/assets/blog/icons/code.svg" alt="代码" />
                 </button>
                 <button class="toolbar-btn" title="链接" @click="insertLink">
-                  <img src="@/assets/icons/share.svg" alt="链接" />
+                  <img src="@/assets/blog/icons/share.svg" alt="链接" />
                 </button>
                 <button class="toolbar-btn" title="图片" @click="insertImage">
-                  <img src="@/assets/icons/image.svg" alt="图片" />
+                  <img src="@/assets/blog/icons/image.svg" alt="图片" />
                 </button>
               </div>
             </div>
@@ -116,7 +116,7 @@
           <div class="post-settings">
             <div class="settings-card">
               <h3 class="settings-title">
-                <img src="@/assets/icons/category.svg" alt="分类" class="settings-icon" />
+                <img src="@/assets/blog/icons/category.svg" alt="分类" class="settings-icon" />
                 文章分类
               </h3>
               <div class="category-options">
@@ -138,7 +138,7 @@
             
             <div class="settings-card">
               <h3 class="settings-title">
-                <img src="@/assets/icons/filter.svg" alt="标签" class="settings-icon" />
+                <img src="@/assets/blog/icons/filter.svg" alt="标签" class="settings-icon" />
                 文章标签
               </h3>
               <div class="tags-input-wrapper">
@@ -150,7 +150,7 @@
                   >
                     {{ tag }}
                     <button class="remove-tag" @click="removeTag(tag)">
-                      <img src="@/assets/icons/close.svg" alt="删除" />
+                      <img src="@/assets/blog/icons/close.svg" alt="删除" />
                     </button>
                   </span>
                   <input 
@@ -181,7 +181,7 @@
             
             <div class="settings-card">
               <h3 class="settings-title">
-                <img src="@/assets/icons/image.svg" alt="封面" class="settings-icon" />
+                <img src="@/assets/blog/icons/image.svg" alt="封面" class="settings-icon" />
                 文章封面
               </h3>
               <div 
@@ -203,7 +203,7 @@
                   </div>
                 </template>
                 <template v-else>
-                  <img src="@/assets/icons/upload.svg" alt="上传" class="upload-icon" />
+                  <img src="@/assets/blog/icons/upload.svg" alt="上传" class="upload-icon" />
                   <span>上传封面图片</span>
                   <span class="upload-hint">建议尺寸：1200 x 500</span>
                 </template>
@@ -212,7 +212,7 @@
             
             <div class="settings-card">
               <h3 class="settings-title">
-                <img src="@/assets/icons/info.svg" alt="摘要" class="settings-icon" />
+                <img src="@/assets/blog/icons/info.svg" alt="摘要" class="settings-icon" />
                 文章摘要
               </h3>
               <textarea 
@@ -233,7 +233,7 @@
 <script lang="ts">
 import { defineComponent, ref, reactive } from 'vue'
 import { useRouter } from 'vue-router'
-import BlogHeader from '@/components/BlogHeader.vue'
+import BlogHeader from '@/components/blog/BlogHeader.vue'
 
 export default defineComponent({
   name: 'BlogWrite',

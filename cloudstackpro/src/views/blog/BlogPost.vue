@@ -8,9 +8,9 @@
         <header class="post-header">
           <div class="breadcrumb">
             <router-link to="/" class="breadcrumb-link">首页</router-link>
-            <img src="@/assets/icons/chevron-right.svg" alt=">" class="breadcrumb-separator" />
+            <img src="@/assets/blog/icons/chevron-right.svg" alt=">" class="breadcrumb-separator" />
             <router-link :to="`/category/${post.category}`" class="breadcrumb-link">{{ post.categoryName }}</router-link>
-            <img src="@/assets/icons/chevron-right.svg" alt=">" class="breadcrumb-separator" />
+            <img src="@/assets/blog/icons/chevron-right.svg" alt=">" class="breadcrumb-separator" />
             <span class="breadcrumb-current">正文</span>
           </div>
           
@@ -39,7 +39,7 @@
             <router-link 
               v-for="tag in post.tags" 
               :key="tag" 
-              :to="`/search?tag=${tag}`" 
+              :to="`/blog/search?tag=${tag}`" 
               class="tag"
             >
               {{ tag }}
@@ -58,19 +58,19 @@
           <aside class="post-sidebar-left">
             <div class="action-panel">
               <button class="panel-btn" :class="{ active: post.isLiked }" @click="toggleLike">
-                <img src="@/assets/icons/heart.svg" alt="点赞" />
+                <img src="@/assets/blog/icons/heart.svg" alt="点赞" />
                 <span>{{ post.likes }}</span>
               </button>
               <button class="panel-btn" :class="{ active: post.isBookmarked }" @click="toggleBookmark">
-                <img src="@/assets/icons/bookmark.svg" alt="收藏" />
+                <img src="@/assets/blog/icons/bookmark.svg" alt="收藏" />
                 <span>{{ post.bookmarks }}</span>
               </button>
               <button class="panel-btn" @click="scrollToComments">
-                <img src="@/assets/icons/comment.svg" alt="评论" />
+                <img src="@/assets/blog/icons/comment.svg" alt="评论" />
                 <span>{{ post.comments }}</span>
               </button>
               <button class="panel-btn" @click="sharePost">
-                <img src="@/assets/icons/share.svg" alt="分享" />
+                <img src="@/assets/blog/icons/share.svg" alt="分享" />
               </button>
             </div>
           </aside>
@@ -83,30 +83,30 @@
             <div class="post-footer">
               <div class="footer-stats">
                 <span class="stat-item">
-                  <img src="@/assets/icons/eye.svg" alt="阅读" class="stat-icon" />
+                  <img src="@/assets/blog/icons/eye.svg" alt="阅读" class="stat-icon" />
                   {{ post.views }} 阅读
                 </span>
                 <span class="stat-item">
-                  <img src="@/assets/icons/heart.svg" alt="点赞" class="stat-icon" />
+                  <img src="@/assets/blog/icons/heart.svg" alt="点赞" class="stat-icon" />
                   {{ post.likes }} 点赞
                 </span>
                 <span class="stat-item">
-                  <img src="@/assets/icons/comment.svg" alt="评论" class="stat-icon" />
+                  <img src="@/assets/blog/icons/comment.svg" alt="评论" class="stat-icon" />
                   {{ post.comments }} 评论
                 </span>
               </div>
               
               <div class="footer-actions">
                 <button class="action-button" :class="{ active: post.isLiked }" @click="toggleLike">
-                  <img src="@/assets/icons/heart.svg" alt="点赞" />
+                  <img src="@/assets/blog/icons/heart.svg" alt="点赞" />
                   <span>{{ post.isLiked ? '已点赞' : '点赞' }}</span>
                 </button>
                 <button class="action-button" :class="{ active: post.isBookmarked }" @click="toggleBookmark">
-                  <img src="@/assets/icons/bookmark.svg" alt="收藏" />
+                  <img src="@/assets/blog/icons/bookmark.svg" alt="收藏" />
                   <span>{{ post.isBookmarked ? '已收藏' : '收藏' }}</span>
                 </button>
                 <button class="action-button" @click="sharePost">
-                  <img src="@/assets/icons/share.svg" alt="分享" />
+                  <img src="@/assets/blog/icons/share.svg" alt="分享" />
                   <span>分享</span>
                 </button>
               </div>
@@ -132,13 +132,13 @@
             <!-- 评论区 -->
             <section class="comments-section" id="comments">
               <h2 class="section-title">
-                <img src="@/assets/icons/comment.svg" alt="评论" class="title-icon" />
+                <img src="@/assets/blog/icons/comment.svg" alt="评论" class="title-icon" />
                 评论 ({{ comments.length }})
               </h2>
               
               <!-- 评论输入框 -->
               <div class="comment-input">
-                <img src="@/assets/images/default-avatar.svg" alt="我的头像" class="my-avatar" />
+                <img src="@/assets/blog/images/default-avatar.svg" alt="我的头像" class="my-avatar" />
                 <div class="input-wrapper">
                   <textarea 
                     v-model="commentText" 
@@ -165,11 +165,11 @@
                     <p class="comment-text">{{ comment.content }}</p>
                     <div class="comment-actions">
                       <button class="comment-action" @click="likeComment(comment.id)">
-                        <img src="@/assets/icons/heart.svg" alt="点赞" />
+                        <img src="@/assets/blog/icons/heart.svg" alt="点赞" />
                         <span>{{ comment.likes }}</span>
                       </button>
                       <button class="comment-action" @click="replyComment(comment.id)">
-                        <img src="@/assets/icons/comment.svg" alt="回复" />
+                        <img src="@/assets/blog/icons/comment.svg" alt="回复" />
                         <span>回复</span>
                       </button>
                     </div>
@@ -183,7 +183,7 @@
           <aside class="post-sidebar-right">
             <div class="toc-panel">
               <h3 class="toc-title">
-                <img src="@/assets/icons/book.svg" alt="目录" class="toc-icon" />
+                <img src="@/assets/blog/icons/book.svg" alt="目录" class="toc-icon" />
                 目录
               </h3>
               <ul class="toc-list">
@@ -204,10 +204,10 @@
 <script lang="ts">
 import { defineComponent, ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
-import BlogHeader from '@/components/BlogHeader.vue'
-import BlogFooter from '@/components/BlogFooter.vue'
-import plusIcon from '@/assets/icons/plus.svg'
-import checkIcon from '@/assets/icons/check.svg'
+import BlogHeader from '@/components/blog/BlogHeader.vue'
+import BlogFooter from '@/components/blog/BlogFooter.vue'
+import plusIcon from '@/assets/blog/icons/plus.svg'
+import checkIcon from '@/assets/blog/icons/check.svg'
 
 export default defineComponent({
   name: 'BlogPost',

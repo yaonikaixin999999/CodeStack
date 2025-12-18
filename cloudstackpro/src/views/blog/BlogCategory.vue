@@ -15,15 +15,15 @@
               <p class="category-desc">{{ currentCategory.description }}</p>
               <div class="category-stats">
                 <span class="stat">
-                  <img src="@/assets/icons/book.svg" alt="文章" class="stat-icon" />
+                  <img src="@/assets/blog/icons/book.svg" alt="文章" class="stat-icon" />
                   {{ currentCategory.postCount }} 篇文章
                 </span>
                 <span class="stat">
-                  <img src="@/assets/icons/user.svg" alt="作者" class="stat-icon" />
+                  <img src="@/assets/blog/icons/user.svg" alt="作者" class="stat-icon" />
                   {{ currentCategory.authorCount }} 位作者
                 </span>
                 <span class="stat">
-                  <img src="@/assets/icons/eye.svg" alt="阅读" class="stat-icon" />
+                  <img src="@/assets/blog/icons/eye.svg" alt="阅读" class="stat-icon" />
                   {{ currentCategory.viewCount }} 次阅读
                 </span>
               </div>
@@ -67,14 +67,14 @@
                   :class="{ active: viewMode === 'grid' }"
                   @click="viewMode = 'grid'"
                 >
-                  <img src="@/assets/icons/category.svg" alt="网格" />
+                  <img src="@/assets/blog/icons/category.svg" alt="网格" />
                 </button>
                 <button 
                   class="view-btn"
                   :class="{ active: viewMode === 'list' }"
                   @click="viewMode = 'list'"
                 >
-                  <img src="@/assets/icons/menu.svg" alt="列表" />
+                  <img src="@/assets/blog/icons/menu.svg" alt="列表" />
                 </button>
               </div>
             </div>
@@ -93,7 +93,7 @@
             <!-- 分页 -->
             <div class="pagination">
               <button class="page-btn prev" :disabled="currentPage === 1" @click="currentPage--">
-                <img src="@/assets/icons/chevron-left.svg" alt="上一页" />
+                <img src="@/assets/blog/icons/chevron-left.svg" alt="上一页" />
                 <span>上一页</span>
               </button>
               <div class="page-numbers">
@@ -109,7 +109,7 @@
               </div>
               <button class="page-btn next" :disabled="currentPage === totalPages" @click="currentPage++">
                 <span>下一页</span>
-                <img src="@/assets/icons/chevron-right.svg" alt="下一页" />
+                <img src="@/assets/blog/icons/chevron-right.svg" alt="下一页" />
               </button>
             </div>
           </section>
@@ -126,16 +126,16 @@
 <script lang="ts">
 import { defineComponent, ref, computed } from 'vue'
 import { useRoute } from 'vue-router'
-import BlogHeader from '@/components/BlogHeader.vue'
-import BlogFooter from '@/components/BlogFooter.vue'
-import BlogSidebar from '@/components/BlogSidebar.vue'
-import PostCard from '@/components/PostCard.vue'
+import BlogHeader from '@/components/blog/BlogHeader.vue'
+import BlogFooter from '@/components/blog/BlogFooter.vue'
+import BlogSidebar from '@/components/blog/BlogSidebar.vue'
+import PostCard from '@/components/blog/PostCard.vue'
 
-import codeIcon from '@/assets/icons/code.svg'
-import bookIcon from '@/assets/icons/book.svg'
-import zapIcon from '@/assets/icons/zap.svg'
-import settingsIcon from '@/assets/icons/settings.svg'
-import categoryIcon from '@/assets/icons/category.svg'
+import codeIcon from '@/assets/blog/icons/code.svg'
+import bookIcon from '@/assets/blog/icons/book.svg'
+import zapIcon from '@/assets/blog/icons/zap.svg'
+import settingsIcon from '@/assets/blog/icons/settings.svg'
+import categoryIcon from '@/assets/blog/icons/category.svg'
 
 export default defineComponent({
   name: 'BlogCategory',

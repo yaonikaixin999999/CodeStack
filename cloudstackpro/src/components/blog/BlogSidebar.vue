@@ -3,7 +3,7 @@
     <!-- 作者信息卡片 -->
     <div class="sidebar-card author-card">
       <div class="author-header">
-        <img src="@/assets/images/user.jpg" alt="头像" class="author-avatar" />
+        <img src="@/assets/blog/images/user.jpg" alt="头像" class="author-avatar" />
         <div class="author-info">
           <h3 class="author-name">CloudStack用户</h3>
           <p class="author-bio">专注技术分享与学习</p>
@@ -24,7 +24,7 @@
         </div>
       </div>
       <button class="follow-btn">
-        <img src="@/assets/icons/plus.svg" alt="关注" class="btn-icon" />
+        <img src="@/assets/blog/icons/plus.svg" alt="关注" class="btn-icon" />
         <span>关注</span>
       </button>
     </div>
@@ -32,7 +32,7 @@
     <!-- 热门标签 -->
     <div class="sidebar-card">
       <div class="card-header">
-        <img src="@/assets/icons/trending.svg" alt="热门标签" class="header-icon" />
+        <img src="@/assets/blog/icons/trending.svg" alt="热门标签" class="header-icon" />
         <h3 class="card-title">热门标签</h3>
       </div>
       <div class="tags-list">
@@ -46,16 +46,16 @@
     <!-- 热门文章 -->
     <div class="sidebar-card">
       <div class="card-header">
-        <img src="@/assets/icons/zap.svg" alt="热门文章" class="header-icon" />
+        <img src="@/assets/blog/icons/zap.svg" alt="热门文章" class="header-icon" />
         <h3 class="card-title">热门文章</h3>
       </div>
       <ul class="hot-posts">
         <li v-for="(post, index) in hotPosts" :key="post.id" class="hot-post-item">
           <span class="post-rank" :class="{ 'top': index < 3 }">{{ index + 1 }}</span>
           <div class="post-info">
-            <router-link :to="`/post/${post.id}`" class="post-title">{{ post.title }}</router-link>
+            <router-link :to="`/blog/post/${post.id}`" class="post-title">{{ post.title }}</router-link>
             <span class="post-views">
-              <img src="@/assets/icons/eye.svg" alt="阅读" class="view-icon" />
+              <img src="@/assets/blog/icons/eye.svg" alt="阅读" class="view-icon" />
               {{ post.views }}
             </span>
           </div>
@@ -66,7 +66,7 @@
     <!-- 文章归档 -->
     <div class="sidebar-card">
       <div class="card-header">
-        <img src="@/assets/icons/book.svg" alt="文章归档" class="header-icon" />
+        <img src="@/assets/blog/icons/book.svg" alt="文章归档" class="header-icon" />
         <h3 class="card-title">文章归档</h3>
       </div>
       <ul class="archive-list">
@@ -82,7 +82,7 @@
     <!-- 友情链接 -->
     <div class="sidebar-card">
       <div class="card-header">
-        <img src="@/assets/icons/share.svg" alt="友情链接" class="header-icon" />
+        <img src="@/assets/blog/icons/share.svg" alt="友情链接" class="header-icon" />
         <h3 class="card-title">友情链接</h3>
       </div>
       <div class="friend-links">
@@ -138,7 +138,7 @@ export default defineComponent({
     ])
     
     const handleTagClick = (tagName: string) => {
-      router.push({ path: '/search', query: { tag: tagName } })
+      router.push({ path: '/blog/search', query: { tag: tagName } })
     }
     
     return {

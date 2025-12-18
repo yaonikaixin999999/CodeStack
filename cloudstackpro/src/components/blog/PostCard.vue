@@ -14,12 +14,12 @@
           <span class="author-name">{{ post.author.name }}</span>
         </div>
         <span class="post-date">
-          <img src="@/assets/icons/clock.svg" alt="时间" class="meta-icon" />
+          <img src="@/assets/blog/icons/clock.svg" alt="时间" class="meta-icon" />
           {{ formatDate(post.createdAt) }}
         </span>
       </div>
       
-      <router-link :to="`/post/${post.id}`" class="card-title">
+      <router-link :to="`/blog/post/${post.id}`" class="card-title">
         {{ post.title }}
       </router-link>
       
@@ -34,28 +34,28 @@
       <div class="card-footer">
         <div class="card-stats">
           <span class="stat-item">
-            <img src="@/assets/icons/eye.svg" alt="阅读" class="stat-icon" />
+            <img src="@/assets/blog/icons/eye.svg" alt="阅读" class="stat-icon" />
             {{ formatNumber(post.views) }}
           </span>
           <span class="stat-item">
-            <img src="@/assets/icons/heart.svg" alt="点赞" class="stat-icon" />
+            <img src="@/assets/blog/icons/heart.svg" alt="点赞" class="stat-icon" />
             {{ formatNumber(post.likes) }}
           </span>
           <span class="stat-item">
-            <img src="@/assets/icons/comment.svg" alt="评论" class="stat-icon" />
+            <img src="@/assets/blog/icons/comment.svg" alt="评论" class="stat-icon" />
             {{ formatNumber(post.comments) }}
           </span>
         </div>
         
         <div class="card-actions">
           <button class="action-btn" :class="{ 'liked': post.isLiked }" @click="toggleLike">
-            <img src="@/assets/icons/heart.svg" alt="点赞" />
+            <img src="@/assets/blog/icons/heart.svg" alt="点赞" />
           </button>
           <button class="action-btn" :class="{ 'bookmarked': post.isBookmarked }" @click="toggleBookmark">
-            <img src="@/assets/icons/bookmark.svg" alt="收藏" />
+            <img src="@/assets/blog/icons/bookmark.svg" alt="收藏" />
           </button>
           <button class="action-btn" @click="sharePost">
-            <img src="@/assets/icons/share.svg" alt="分享" />
+            <img src="@/assets/blog/icons/share.svg" alt="分享" />
           </button>
         </div>
       </div>

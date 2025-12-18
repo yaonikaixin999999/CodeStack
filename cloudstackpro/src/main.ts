@@ -29,4 +29,7 @@ declare global {
     }
 }
 
+// 导入博客系统样式
+import './assets/blog/styles/main.css'
+
 createApp(App).use(store).use(router).mount('#app')

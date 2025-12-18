@@ -2,21 +2,21 @@
   <header class="blog-header">
     <div class="header-container">
       <div class="header-left">
-        <router-link to="/" class="logo">
+        <router-link to="/blog" class="logo">
           <span class="logo-text">CloudStack</span>
           <span class="logo-badge">Blog</span>
         </router-link>
         <nav class="header-nav">
-          <router-link to="/" class="nav-link" :class="{ active: isActive('/') }">
-            <img src="@/assets/icons/home.svg" alt="首页" class="nav-icon" />
+          <router-link to="/blog" class="nav-link" :class="{ active: isActive('/') }">
+            <img src="@/assets/blog/icons/home.svg" alt="首页" class="nav-icon" />
             <span>首页</span>
           </router-link>
-          <router-link to="/category/tech" class="nav-link" :class="{ active: isActive('/category') }">
-            <img src="@/assets/icons/category.svg" alt="分类" class="nav-icon" />
+          <router-link to="/blog/category/tech" class="nav-link" :class="{ active: isActive('/category') }">
+            <img src="@/assets/blog/icons/category.svg" alt="分类" class="nav-icon" />
             <span>分类</span>
           </router-link>
-          <router-link to="/search" class="nav-link" :class="{ active: isActive('/search') }">
-            <img src="@/assets/icons/trending.svg" alt="热门" class="nav-icon" />
+          <router-link to="/blog/search" class="nav-link" :class="{ active: isActive('/search') }">
+            <img src="@/assets/blog/icons/trending.svg" alt="热门" class="nav-icon" />
             <span>热门</span>
           </router-link>
         </nav>
@@ -24,7 +24,7 @@
       
       <div class="header-center">
         <div class="search-box">
-          <img src="@/assets/icons/search.svg" alt="搜索" class="search-icon" />
+          <img src="@/assets/blog/icons/search.svg" alt="搜索" class="search-icon" />
           <input 
             type="text" 
             placeholder="搜索文章、标签或作者..." 
@@ -35,39 +35,39 @@
       </div>
       
       <div class="header-right">
-        <router-link to="/write" class="write-btn">
-          <img src="@/assets/icons/edit.svg" alt="写文章" class="btn-icon" />
+        <router-link to="/blog/write" class="write-btn">
+          <img src="@/assets/blog/icons/edit.svg" alt="写文章" class="btn-icon" />
           <span>写文章</span>
         </router-link>
         
         <div class="user-actions">
           <button class="action-btn notification-btn">
-            <img src="@/assets/icons/comment.svg" alt="消息" class="action-icon" />
+            <img src="@/assets/blog/icons/comment.svg" alt="消息" class="action-icon" />
             <span class="notification-badge">3</span>
           </button>
           
           <div class="user-menu" @click="toggleUserMenu">
             <div class="user-avatar">
-              <img src="@/assets/images/user.jpg" alt="用户头像" />
+              <img src="@/assets/blog/images/user.jpg" alt="用户头像" />
             </div>
-            <img src="@/assets/icons/chevron-down.svg" alt="展开" class="chevron-icon" />
+            <img src="@/assets/blog/icons/chevron-down.svg" alt="展开" class="chevron-icon" />
             
             <div v-if="showUserMenu" class="user-dropdown">
-              <router-link to="/profile" class="dropdown-item">
-                <img src="@/assets/icons/user.svg" alt="个人中心" class="dropdown-icon" />
+              <router-link to="/blog/profile" class="dropdown-item">
+                <img src="@/assets/blog/icons/user.svg" alt="个人中心" class="dropdown-icon" />
                 <span>个人中心</span>
               </router-link>
-              <router-link to="/profile" class="dropdown-item">
-                <img src="@/assets/icons/bookmark.svg" alt="我的收藏" class="dropdown-icon" />
+              <router-link to="/blog/profile" class="dropdown-item">
+                <img src="@/assets/blog/icons/bookmark.svg" alt="我的收藏" class="dropdown-icon" />
                 <span>我的收藏</span>
               </router-link>
-              <router-link to="/profile" class="dropdown-item">
-                <img src="@/assets/icons/settings.svg" alt="设置" class="dropdown-icon" />
+              <router-link to="/blog/profile" class="dropdown-item">
+                <img src="@/assets/blog/icons/settings.svg" alt="设置" class="dropdown-icon" />
                 <span>设置</span>
               </router-link>
               <div class="dropdown-divider"></div>
               <button class="dropdown-item logout-btn">
-                <img src="@/assets/icons/close.svg" alt="退出" class="dropdown-icon" />
+                <img src="@/assets/blog/icons/close.svg" alt="退出" class="dropdown-icon" />
                 <span>退出登录</span>
               </button>
             </div>
@@ -77,17 +77,17 @@
       
       <!-- 移动端菜单按钮 -->
       <button class="mobile-menu-btn" @click="toggleMobileMenu">
-        <img src="@/assets/icons/menu.svg" alt="菜单" />
+        <img src="@/assets/blog/icons/menu.svg" alt="菜单" />
       </button>
     </div>
     
     <!-- 移动端菜单 -->
     <div v-if="showMobileMenu" class="mobile-menu">
-      <router-link to="/" class="mobile-nav-link">首页</router-link>
-      <router-link to="/category/tech" class="mobile-nav-link">分类</router-link>
-      <router-link to="/search" class="mobile-nav-link">热门</router-link>
-      <router-link to="/write" class="mobile-nav-link">写文章</router-link>
-      <router-link to="/profile" class="mobile-nav-link">个人中心</router-link>
+      <router-link to="/blog" class="mobile-nav-link">首页</router-link>
+      <router-link to="/blog/category/tech" class="mobile-nav-link">分类</router-link>
+      <router-link to="/blog/search" class="mobile-nav-link">热门</router-link>
+      <router-link to="/blog/write" class="mobile-nav-link">写文章</router-link>
+      <router-link to="/blog/profile" class="mobile-nav-link">个人中心</router-link>
     </div>
   </header>
 </template>
@@ -112,7 +112,7 @@ export default defineComponent({
     
     const handleSearch = () => {
       if (searchQuery.value.trim()) {
-        router.push({ path: '/search', query: { q: searchQuery.value } })
+        router.push({ path: '/blog/search', query: { q: searchQuery.value } })
       }
     }
     

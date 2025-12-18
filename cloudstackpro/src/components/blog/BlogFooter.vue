@@ -12,13 +12,13 @@
           </p>
           <div class="social-links">
             <a href="#" class="social-link" title="GitHub">
-              <img src="@/assets/icons/code.svg" alt="GitHub" />
+              <img src="@/assets/blog/icons/code.svg" alt="GitHub" />
             </a>
             <a href="#" class="social-link" title="邮箱">
-              <img src="@/assets/icons/comment.svg" alt="邮箱" />
+              <img src="@/assets/blog/icons/comment.svg" alt="邮箱" />
             </a>
             <a href="#" class="social-link" title="分享">
-              <img src="@/assets/icons/share.svg" alt="分享" />
+              <img src="@/assets/blog/icons/share.svg" alt="分享" />
             </a>
           </div>
         </div>
@@ -26,10 +26,10 @@
         <div class="footer-links">
           <div class="link-group">
             <h4 class="link-title">快速导航</h4>
-            <router-link to="/" class="link-item">首页</router-link>
-            <router-link to="/category/tech" class="link-item">技术文章</router-link>
-            <router-link to="/search" class="link-item">热门话题</router-link>
-            <router-link to="/write" class="link-item">写文章</router-link>
+            <router-link to="/blog" class="link-item">首页</router-link>
+            <router-link to="/blog/category/tech" class="link-item">技术文章</router-link>
+            <router-link to="/blog/search" class="link-item">热门话题</router-link>
+            <router-link to="/blog/write" class="link-item">写文章</router-link>
           </div>
           
           <div class="link-group">

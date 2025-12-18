@@ -10,7 +10,7 @@
         </div>
         <div class="header-content">
           <div class="user-avatar-wrapper">
-            <img src="@/assets/images/user.jpg" :alt="userInfo.name" class="user-avatar" />
+            <img src="@/assets/blog/images/user.jpg" :alt="userInfo.name" class="user-avatar" />
             <span class="user-level">Lv.{{ userInfo.level }}</span>
           </div>
           <div class="user-info">
@@ -21,15 +21,15 @@
             <p class="user-bio">{{ userInfo.bio }}</p>
             <div class="user-meta">
               <span class="meta-item">
-                <img src="@/assets/icons/category.svg" alt="职业" class="meta-icon" />
+                <img src="@/assets/blog/icons/category.svg" alt="职业" class="meta-icon" />
                 {{ userInfo.profession }}
               </span>
               <span class="meta-item">
-                <img src="@/assets/icons/home.svg" alt="位置" class="meta-icon" />
+                <img src="@/assets/blog/icons/home.svg" alt="位置" class="meta-icon" />
                 {{ userInfo.location }}
               </span>
               <span class="meta-item">
-                <img src="@/assets/icons/clock.svg" alt="加入时间" class="meta-icon" />
+                <img src="@/assets/blog/icons/clock.svg" alt="加入时间" class="meta-icon" />
                 {{ userInfo.joinDate }} 加入
               </span>
             </div>
@@ -40,17 +40,17 @@
               {{ isFollowed ? '已关注' : '关注' }}
             </button>
             <button class="action-btn">
-              <img src="@/assets/icons/comment.svg" alt="私信" class="btn-icon" />
+              <img src="@/assets/blog/icons/comment.svg" alt="私信" class="btn-icon" />
               私信
             </button>
           </div>
           <div class="user-actions" v-else>
             <router-link to="/profile/edit" class="action-btn">
-              <img src="@/assets/icons/edit.svg" alt="编辑" class="btn-icon" />
+              <img src="@/assets/blog/icons/edit.svg" alt="编辑" class="btn-icon" />
               编辑资料
             </router-link>
             <router-link to="/profile/settings" class="action-btn">
-              <img src="@/assets/icons/settings.svg" alt="设置" class="btn-icon" />
+              <img src="@/assets/blog/icons/settings.svg" alt="设置" class="btn-icon" />
               设置
             </router-link>
           </div>
@@ -107,7 +107,7 @@
             <!-- 文章列表 -->
             <div class="posts-list" v-if="activeTab === 'posts'">
               <article v-for="post in userPosts" :key="post.id" class="post-item">
-                <router-link :to="`/post/${post.id}`" class="post-content">
+                <router-link :to="`/blog/post/${post.id}`" class="post-content">
                   <div class="post-cover" v-if="post.coverImage">
                     <img :src="post.coverImage" :alt="post.title" />
                   </div>
@@ -116,19 +116,19 @@
                     <p class="post-excerpt">{{ post.excerpt }}</p>
                     <div class="post-meta">
                       <span class="meta-item">
-                        <img src="@/assets/icons/clock.svg" alt="时间" class="meta-icon" />
+                        <img src="@/assets/blog/icons/clock.svg" alt="时间" class="meta-icon" />
                         {{ post.createdAt }}
                       </span>
                       <span class="meta-item">
-                        <img src="@/assets/icons/eye.svg" alt="阅读" class="meta-icon" />
+                        <img src="@/assets/blog/icons/eye.svg" alt="阅读" class="meta-icon" />
                         {{ post.views }}
                       </span>
                       <span class="meta-item">
-                        <img src="@/assets/icons/heart.svg" alt="点赞" class="meta-icon" />
+                        <img src="@/assets/blog/icons/heart.svg" alt="点赞" class="meta-icon" />
                         {{ post.likes }}
                       </span>
                       <span class="meta-item">
-                        <img src="@/assets/icons/comment.svg" alt="评论" class="meta-icon" />
+                        <img src="@/assets/blog/icons/comment.svg" alt="评论" class="meta-icon" />
                         {{ post.comments }}
                       </span>
                     </div>
@@ -140,7 +140,7 @@
             <!-- 收藏列表 -->
             <div class="bookmarks-list" v-if="activeTab === 'bookmarks'">
               <article v-for="post in bookmarks" :key="post.id" class="post-item">
-                <router-link :to="`/post/${post.id}`" class="post-content">
+                <router-link :to="`/blog/post/${post.id}`" class="post-content">
                   <div class="post-cover" v-if="post.coverImage">
                     <img :src="post.coverImage" :alt="post.title" />
                   </div>
@@ -153,7 +153,7 @@
                         {{ post.author.name }}
                       </span>
                       <span class="meta-item">
-                        <img src="@/assets/icons/clock.svg" alt="收藏时间" class="meta-icon" />
+                        <img src="@/assets/blog/icons/clock.svg" alt="收藏时间" class="meta-icon" />
                         收藏于 {{ post.bookmarkedAt }}
                       </span>
                     </div>
@@ -198,7 +198,7 @@
             <!-- 成就卡片 -->
             <div class="sidebar-card achievements-card">
               <h3 class="card-title">
-                <img src="@/assets/icons/zap.svg" alt="成就" class="title-icon" />
+                <img src="@/assets/blog/icons/zap.svg" alt="成就" class="title-icon" />
                 成就展示
               </h3>
               <div class="achievements-grid">
@@ -214,7 +214,7 @@
             <!-- 技术栈 -->
             <div class="sidebar-card skills-card">
               <h3 class="card-title">
-                <img src="@/assets/icons/code.svg" alt="技术栈" class="title-icon" />
+                <img src="@/assets/blog/icons/code.svg" alt="技术栈" class="title-icon" />
                 技术栈
               </h3>
               <div class="skills-list">
@@ -233,7 +233,7 @@
             <!-- 常用标签 -->
             <div class="sidebar-card tags-card">
               <h3 class="card-title">
-                <img src="@/assets/icons/category.svg" alt="常用标签" class="title-icon" />
+                <img src="@/assets/blog/icons/category.svg" alt="常用标签" class="title-icon" />
                 常用标签
               </h3>
               <div class="tags-cloud">
@@ -252,21 +252,21 @@
 <script lang="ts">
 import { defineComponent, ref, computed } from 'vue'
 import { useRoute } from 'vue-router'
-import BlogHeader from '@/components/BlogHeader.vue'
-import BlogFooter from '@/components/BlogFooter.vue'
+import BlogHeader from '@/components/blog/BlogHeader.vue'
+import BlogFooter from '@/components/blog/BlogFooter.vue'
 
-import bookIcon from '@/assets/icons/book.svg'
-import bookmarkIcon from '@/assets/icons/bookmark.svg'
-import userIcon from '@/assets/icons/user.svg'
-import heartIcon from '@/assets/icons/heart.svg'
-import plusIcon from '@/assets/icons/plus.svg'
-import checkIcon from '@/assets/icons/check.svg'
-import iconAuthor from '@/assets/icons/icons8-文章-96.png'
-import iconTrophy from '@/assets/icons/icons8-奖杯-100.png'
-import iconExcellent from '@/assets/icons/icons8-优秀-96.png'
-import iconFire from '@/assets/icons/icons8-火-96.png'
-import iconDiamond from '@/assets/icons/icons8-钻石-96.png'
-import iconWriter from '@/assets/icons/icons8-作者-100.png'
+import bookIcon from '@/assets/blog/icons/book.svg'
+import bookmarkIcon from '@/assets/blog/icons/bookmark.svg'
+import userIcon from '@/assets/blog/icons/user.svg'
+import heartIcon from '@/assets/blog/icons/heart.svg'
+import plusIcon from '@/assets/blog/icons/plus.svg'
+import checkIcon from '@/assets/blog/icons/check.svg'
+import iconAuthor from '@/assets/blog/icons/icons8-文章-96.png'
+import iconTrophy from '@/assets/blog/icons/icons8-奖杯-100.png'
+import iconExcellent from '@/assets/blog/icons/icons8-优秀-96.png'
+import iconFire from '@/assets/blog/icons/icons8-火-96.png'
+import iconDiamond from '@/assets/blog/icons/icons8-钻石-96.png'
+import iconWriter from '@/assets/blog/icons/icons8-作者-100.png'
 
 export default defineComponent({
   name: 'BlogProfile',

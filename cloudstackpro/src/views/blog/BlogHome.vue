@@ -10,7 +10,7 @@
             <h1 class="hero-title">CloudStack Blog</h1>
             <p class="hero-subtitle">分享技术 · 记录成长 · 连接世界</p>
             <div class="hero-search">
-              <img src="@/assets/icons/search.svg" alt="搜索" class="search-icon" />
+              <img src="@/assets/blog/icons/search.svg" alt="搜索" class="search-icon" />
               <input type="text" placeholder="搜索感兴趣的内容..." v-model="searchQuery" @keyup.enter="handleSearch" />
               <button class="search-btn" @click="handleSearch">搜索</button>
             </div>
@@ -45,7 +45,7 @@
             <div class="section-header">
               <div class="header-left">
                 <h2 class="section-title">
-                  <img src="@/assets/icons/book.svg" alt="文章" class="title-icon" />
+                  <img src="@/assets/blog/icons/book.svg" alt="文章" class="title-icon" />
                   最新文章
                 </h2>
               </div>
@@ -77,7 +77,7 @@
             <!-- 加载更多 -->
             <div class="load-more">
               <button class="load-more-btn" @click="loadMorePosts">
-                <img src="@/assets/icons/chevrons-down.svg" alt="加载更多" class="btn-icon" />
+                <img src="@/assets/blog/icons/chevrons-down.svg" alt="加载更多" class="btn-icon" />
                 <span>加载更多</span>
               </button>
             </div>
@@ -96,17 +96,17 @@
 <script lang="ts">
 import { defineComponent, ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
-import BlogHeader from '@/components/BlogHeader.vue'
-import BlogFooter from '@/components/BlogFooter.vue'
-import BlogSidebar from '@/components/BlogSidebar.vue'
-import PostCard from '@/components/PostCard.vue'
+import BlogHeader from '@/components/blog/BlogHeader.vue'
+import BlogFooter from '@/components/blog/BlogFooter.vue'
+import BlogSidebar from '@/components/blog/BlogSidebar.vue'
+import PostCard from '@/components/blog/PostCard.vue'
 
 // 导入图标
-import homeIcon from '@/assets/icons/home.svg'
-import codeIcon from '@/assets/icons/code.svg'
-import bookIcon from '@/assets/icons/book.svg'
-import zapIcon from '@/assets/icons/zap.svg'
-import categoryIcon from '@/assets/icons/category.svg'
+import homeIcon from '@/assets/blog/icons/home.svg'
+import codeIcon from '@/assets/blog/icons/code.svg'
+import bookIcon from '@/assets/blog/icons/book.svg'
+import zapIcon from '@/assets/blog/icons/zap.svg'
+import categoryIcon from '@/assets/blog/icons/category.svg'
 
 export default defineComponent({
   name: 'BlogHome',
@@ -273,7 +273,7 @@ export default defineComponent({
     
     const handleSearch = () => {
       if (searchQuery.value.trim()) {
-        router.push({ path: '/search', query: { q: searchQuery.value } })
+        router.push({ path: '/blog/search', query: { q: searchQuery.value } })
       }
     }
     

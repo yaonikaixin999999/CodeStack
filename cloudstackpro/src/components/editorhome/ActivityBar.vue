@@ -32,9 +32,9 @@
         :class="['activity-icon', { active: activeTab === 'extensions' }]"
         @click="handleClick('extensions')"
       >
-        <a href="https://yaonikaixin999999.xyz" target="_blank" rel="noopener noreferrer">
+        <router-link to="/blog">
           <img :src="extensionsIcon" alt="Extensions" />
-        </a>
+        </router-link>
       </div>
       
       <div class="spacer"></div>
