@@ -26,8 +26,7 @@ const routes: RouteRecordRaw[] = [
   {
     path: '/login',
     name: 'Login',
-    // component: Login
-    component: EditorHome
+    component: Login
   },
   {
     path: '/editor',
@@ -80,17 +79,17 @@ const router = createRouter({
 })
 
 // 路由守卫
-// router.beforeEach((to, from, next) => {
-//   const requiresAuth = to.matched.some(record => record.meta?.requiresAuth)
-//   const currentUser = userService.getCurrentUser()
+router.beforeEach((to, from, next) => {
+  const requiresAuth = to.matched.some(record => record.meta?.requiresAuth)
+  const currentUser = userService.getCurrentUser()
 
-//   if (requiresAuth && !currentUser) {
-//     next('/login')
-//   } else if (to.path === '/login' && currentUser) {
-//     next('/editor')
-//   } else {
-//     next()
-//   }
-// })
+  if (requiresAuth && !currentUser) {
+    next('/login')
+  } else if (to.path === '/login' && currentUser) {
+    next('/editor')
+  } else {
+    next()
+  }
+})
 
 export default router

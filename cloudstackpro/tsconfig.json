@@ -16,10 +16,8 @@
     "types": [
       "webpack-env",
       "node",
-      "vite/env",
       "vue",
-      "monaco-editor",
-      "amoayun/monaco-editor-vue3"
+      "monaco-editor"
     ],
     "paths": {
       "@/*": [
