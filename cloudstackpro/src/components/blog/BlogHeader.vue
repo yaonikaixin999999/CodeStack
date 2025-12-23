@@ -41,18 +41,22 @@
         </router-link>
         
         <div class="user-actions">
-          <button class="action-btn notification-btn">
+          <button class="action-btn notification-btn" @click="$router.push('/blog/profile')">
             <img src="@/assets/blog/icons/comment.svg" alt="消息" class="action-icon" />
-            <span class="notification-badge">3</span>
+            <span v-if="unreadCount > 0" class="notification-badge">{{ unreadCount > 99 ? '99+' : unreadCount }}</span>
           </button>
           
           <div class="user-menu" @click="toggleUserMenu">
             <div class="user-avatar">
-              <img src="@/assets/blog/images/user.jpg" alt="用户头像" />
+              <img :src="userAvatar" :alt="displayName" />
             </div>
             <img src="@/assets/blog/icons/chevron-down.svg" alt="展开" class="chevron-icon" />
             
             <div v-if="showUserMenu" class="user-dropdown">
+              <div class="dropdown-user-info">
+                <span class="user-name">{{ displayName }}</span>
+              </div>
+              <div class="dropdown-divider"></div>
               <router-link to="/blog/profile" class="dropdown-item">
                 <img src="@/assets/blog/icons/user.svg" alt="个人中心" class="dropdown-icon" />
                 <span>个人中心</span>
@@ -66,9 +70,9 @@
                 <span>设置</span>
               </router-link>
               <div class="dropdown-divider"></div>
-              <button class="dropdown-item logout-btn">
+              <button class="dropdown-item logout-btn" @click="handleLogout">
                 <img src="@/assets/blog/icons/close.svg" alt="退出" class="dropdown-icon" />
-                <span>退出登录</span>
+                <span>退出Blog</span>
               </button>
             </div>
           </div>
@@ -93,8 +97,9 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, ref } from 'vue'
+import { defineComponent, ref, onMounted, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
+import { blogService, type User } from '@/services/blogService'
 
 export default defineComponent({
   name: 'BlogHeader',
@@ -105,6 +110,40 @@ export default defineComponent({
     const searchQuery = ref('')
     const showUserMenu = ref(false)
     const showMobileMenu = ref(false)
+    const currentUser = ref<User | null>(null)
+    const unreadCount = ref(0)
+    
+    // 获取用户信息
+    const loadUserInfo = () => {
+      currentUser.value = blogService.auth.getLocalUser()
+    }
+    
+    // 获取未读消息数量
+    const loadUnreadCount = async () => {
+      if (blogService.auth.isLoggedIn()) {
+        try {
+          const response = await blogService.notifications.getUnreadCount()
+          if (response.success) {
+            unreadCount.value = response.data || 0
+          }
+        } catch (error) {
+          console.error('获取未读消息失败:', error)
+        }
+      }
+    }
+    
+    // 用户头像
+    const userAvatar = computed(() => {
+      if (currentUser.value?.avatar) {
+        return currentUser.value.avatar
+      }
+      return `https://api.dicebear.com/7.x/avataaars/svg?seed=${currentUser.value?.username || 'default'}`
+    })
+    
+    // 用户名
+    const displayName = computed(() => {
+      return currentUser.value?.nickname || currentUser.value?.username || '用户'
+    })
     
     const isActive = (path: string) => {
       return route.path === path || route.path.startsWith(path + '/')
@@ -124,14 +163,30 @@ export default defineComponent({
       showMobileMenu.value = !showMobileMenu.value
     }
     
+    // 退出登录
+    const handleLogout = () => {
+      blogService.auth.logout()
+      router.push('/login')
+    }
+    
+    onMounted(() => {
+      loadUserInfo()
+      loadUnreadCount()
+    })
+    
     return {
       searchQuery,
       showUserMenu,
       showMobileMenu,
+      currentUser,
+      unreadCount,
+      userAvatar,
+      displayName,
       isActive,
       handleSearch,
       toggleUserMenu,
-      toggleMobileMenu
+      toggleMobileMenu,
+      handleLogout
     }
   }
 })

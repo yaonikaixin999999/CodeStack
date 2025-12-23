@@ -231,9 +231,10 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, ref, reactive } from 'vue'
-import { useRouter } from 'vue-router'
+import { defineComponent, ref, reactive, onMounted } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import BlogHeader from '@/components/blog/BlogHeader.vue'
+import { blogService } from '@/services/blogService'
 
 export default defineComponent({
   name: 'BlogWrite',
@@ -242,9 +243,14 @@ export default defineComponent({
   },
   setup() {
     const router = useRouter()
+    const route = useRoute()
     const editorRef = ref<HTMLTextAreaElement | null>(null)
     const coverInputRef = ref<HTMLInputElement | null>(null)
     const tagInput = ref('')
+    const isEditing = ref(false)
+    const editingPostId = ref<number | null>(null)
+    const saving = ref(false)
+    const publishing = ref(false)
     
     const postData = reactive({
       title: '',
@@ -255,7 +261,7 @@ export default defineComponent({
       excerpt: ''
     })
     
-    const categories = ref([
+    const categories = ref<any[]>([
       { id: 'frontend', name: '前端开发' },
       { id: 'backend', name: '后端开发' },
       { id: 'ai', name: '人工智能' },
@@ -268,6 +274,73 @@ export default defineComponent({
       'Vue.js', 'React', 'TypeScript', 'Node.js', 'Python', 
       '前端', '后端', '全栈', '算法', '面试'
     ])
+    
+    // 加载分类列表
+    const loadCategories = async () => {
+      try {
+        const response = await blogService.categories.getAll()
+        if (response.success && response.data && response.data.length > 0) {
+          categories.value = response.data.map(c => ({
+            id: c.id.toString(),
+            name: c.name,
+            slug: c.slug
+          }))
+        }
+      } catch (error) {
+        console.error('加载分类失败:', error)
+      }
+    }
+    
+    // 加载热门标签
+    const loadHotTags = async () => {
+      try {
+        const response = await blogService.tags.getHot(10)
+        if (response.success && response.data && response.data.length > 0) {
+          suggestedTags.value = response.data.map(t => t.name)
+        }
+      } catch (error) {
+        console.error('加载热门标签失败:', error)
+      }
+    }
+    
+    // 如果是编辑模式，加载文章数据
+    const loadPostForEdit = async () => {
+      const postId = route.query.edit as string
+      if (postId) {
+        isEditing.value = true
+        editingPostId.value = Number(postId)
+        
+        try {
+          const response = await blogService.posts.getById(Number(postId))
+          if (response.success && response.data) {
+            const post = response.data
+            postData.title = post.title
+            postData.content = post.content
+            postData.category = post.category?.id?.toString() || ''
+            postData.tags = post.tags?.map(t => t.name) || []
+            postData.coverImage = post.coverImage || ''
+            postData.excerpt = post.excerpt || ''
+          }
+        } catch (error) {
+          console.error('加载文章失败:', error)
+          alert('加载文章失败')
+        }
+      }
+    }
+    
+    // 加载本地草稿
+    const loadDraft = () => {
+      const draft = localStorage.getItem('blogDraft')
+      if (draft && !isEditing.value) {
+        const confirm = window.confirm('检测到未保存的草稿，是否恢复？')
+        if (confirm) {
+          const draftData = JSON.parse(draft)
+          Object.assign(postData, draftData)
+        } else {
+          localStorage.removeItem('blogDraft')
+        }
+      }
+    }
     
     const insertFormat = (type: string) => {
       const textarea = editorRef.value
@@ -405,7 +478,7 @@ export default defineComponent({
       alert('草稿已保存')
     }
     
-    const publishPost = () => {
+    const publishPost = async () => {
       if (!postData.title.trim()) {
         alert('请输入文章标题')
         return
@@ -419,11 +492,55 @@ export default defineComponent({
         return
       }
       
-      // 发布逻辑
-      console.log('发布文章:', postData)
-      alert('文章发布成功！')
-      router.push('/')
+      publishing.value = true
+      
+      try {
+        // 如果封面图是 base64 数据，暂时不传（太长会导致数据库存储失败）
+        // 建议使用图片上传接口获取 URL
+        const coverImageValue = postData.coverImage && !postData.coverImage.startsWith('data:') 
+          ? postData.coverImage 
+          : undefined
+        
+        const postPayload = {
+          title: postData.title,
+          content: postData.content,
+          categoryId: Number(postData.category),
+          tagIds: postData.tags?.map((tag: any) => typeof tag === 'object' ? tag.id : null).filter(Boolean) || [],
+          newTags: postData.tags?.filter((tag: any) => typeof tag === 'string') || [],
+          coverImage: coverImageValue,
+          excerpt: postData.excerpt || postData.content.substring(0, 200),
+          status: 1  // 0-草稿, 1-发布
+        }
+        
+        let response
+        if (isEditing.value && editingPostId.value) {
+          response = await blogService.posts.update(editingPostId.value, postPayload)
+        } else {
+          response = await blogService.posts.create(postPayload)
+        }
+        
+        if (response.success) {
+          // 清除草稿
+          localStorage.removeItem('blogDraft')
+          alert(isEditing.value ? '文章更新成功！' : '文章发布成功！')
+          router.push('/blog')
+        } else {
+          throw new Error(response.message || '发布失败')
+        }
+      } catch (error: any) {
+        console.error('发布文章失败:', error)
+        alert('发布失败：' + (error.message || '网络错误'))
+      } finally {
+        publishing.value = false
+      }
     }
+    
+    onMounted(async () => {
+      await loadCategories()
+      await loadHotTags()
+      await loadPostForEdit()
+      loadDraft()
+    })
     
     return {
       editorRef,
@@ -432,6 +549,9 @@ export default defineComponent({
       postData,
       categories,
       suggestedTags,
+      isEditing,
+      saving,
+      publishing,
       insertFormat,
       insertHeading,
       insertList,

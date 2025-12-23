@@ -250,10 +250,11 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, ref, computed } from 'vue'
+import { defineComponent, ref, computed, onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import BlogHeader from '@/components/blog/BlogHeader.vue'
 import BlogFooter from '@/components/blog/BlogFooter.vue'
+import { blogService } from '@/services/blogService'
 
 import bookIcon from '@/assets/blog/icons/book.svg'
 import bookmarkIcon from '@/assets/blog/icons/bookmark.svg'
@@ -277,98 +278,42 @@ export default defineComponent({
   setup() {
     const route = useRoute()
     
+    const loading = ref(true)
     const isOwner = ref(true)
     const isFollowed = ref(false)
     const activeTab = ref('posts')
+    const currentUser = ref(blogService.auth.getLocalUser())
     
     const userInfo = ref({
+      id: 0,
       avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=profile',
       name: '技术小白',
       level: 5,
       badges: ['优秀作者', '技术达人'],
-      bio: '全栈开发工程师，热爱技术分享，专注于 Vue.js、TypeScript 和 Node.js 的探索与实践。',
+      bio: '全栈开发工程师，热爱技术分享。',
       profession: '全栈工程师',
       location: '北京',
       joinDate: '2023-01',
       stats: {
-        posts: 86,
-        followers: '1.2k',
-        following: 128,
-        likes: '3.6k',
-        views: '12.5w'
+        posts: 0,
+        followers: '0',
+        following: 0,
+        likes: '0',
+        views: '0'
       }
     })
     
     const contentTabs = ref([
-      { id: 'posts', name: '文章', count: 86, icon: bookIcon },
-      { id: 'bookmarks', name: '收藏', count: 32, icon: bookmarkIcon },
-      { id: 'following', name: '关注', count: 128, icon: userIcon },
-      { id: 'followers', name: '粉丝', count: '1.2k', icon: heartIcon }
+      { id: 'posts', name: '文章', count: 0, icon: bookIcon },
+      { id: 'bookmarks', name: '收藏', count: 0, icon: bookmarkIcon },
+      { id: 'following', name: '关注', count: 0, icon: userIcon },
+      { id: 'followers', name: '粉丝', count: 0, icon: heartIcon }
     ])
     
-    const userPosts = ref([
-      {
-        id: 1,
-        title: 'Vue 3.0 Composition API 完全指南',
-        excerpt: '深入探讨 Vue 3.0 的 Composition API，包括 setup 函数、响应式系统等核心概念。',
-        coverImage: 'https://picsum.photos/300/200?random=40',
-        createdAt: '2025-12-15',
-        views: '2.3k',
-        likes: 186,
-        comments: 42
-      },
-      {
-        id: 2,
-        title: 'TypeScript 高级类型详解',
-        excerpt: '深入讲解 TypeScript 的高级类型特性，包括泛型约束、条件类型等。',
-        coverImage: 'https://picsum.photos/300/200?random=41',
-        createdAt: '2025-12-14',
-        views: '1.8k',
-        likes: 142,
-        comments: 35
-      },
-      {
-        id: 3,
-        title: 'Node.js 微服务架构实践',
-        excerpt: '探索如何将传统的单体应用拆分为微服务架构。',
-        coverImage: '',
-        createdAt: '2025-12-13',
-        views: '1.5k',
-        likes: 98,
-        comments: 28
-      }
-    ])
-    
-    const bookmarks = ref([
-      {
-        id: 10,
-        title: 'React 18 新特性深度解析',
-        excerpt: '全面了解 React 18 带来的新特性和改进。',
-        coverImage: 'https://picsum.photos/300/200?random=50',
-        author: { name: 'React专家', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=10' },
-        bookmarkedAt: '2025-12-10'
-      },
-      {
-        id: 11,
-        title: 'Docker 容器化部署最佳实践',
-        excerpt: '学习如何使用 Docker 进行应用容器化部署。',
-        coverImage: 'https://picsum.photos/300/200?random=51',
-        author: { name: '运维大师', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=11' },
-        bookmarkedAt: '2025-12-08'
-      }
-    ])
-    
-    const following = ref([
-      { id: 1, name: '代码大师', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=f1', bio: '10年全栈开发经验', followers: '5.2k', isFollowed: true },
-      { id: 2, name: '前端达人', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=f2', bio: '专注前端技术分享', followers: '3.8k', isFollowed: true },
-      { id: 3, name: '架构师老王', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=f3', bio: '系统架构设计', followers: '8.6k', isFollowed: true }
-    ])
-    
-    const followers = ref([
-      { id: 4, name: '小明同学', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=f4', bio: '前端开发爱好者', followers: '128', isFollowed: false },
-      { id: 5, name: '技术小白', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=f5', bio: '正在学习Vue.js', followers: '56', isFollowed: true },
-      { id: 6, name: '程序员阿杰', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=f6', bio: '后端开发工程师', followers: '892', isFollowed: false }
-    ])
+    const userPosts = ref<any[]>([])
+    const bookmarks = ref<any[]>([])
+    const following = ref<any[]>([])
+    const followers = ref<any[]>([])
     
     const achievements = ref([
       { id: 1, name: '百篇文章', icon: iconAuthor },
@@ -392,11 +337,256 @@ export default defineComponent({
       '前端开发', '全栈', '微服务', 'Docker', 'Git'
     ])
     
-    const toggleFollow = () => {
-      isFollowed.value = !isFollowed.value
+    // 加载用户信息
+    const loadUserProfile = async () => {
+      const userId = route.params.id as string
+      loading.value = true
+      
+      try {
+        if (userId) {
+          // 查看其他用户的个人主页
+          isOwner.value = currentUser.value?.id === Number(userId)
+          
+          const response = await blogService.users.getById(Number(userId))
+          if (response.success && response.data) {
+            const user = response.data
+            updateUserInfo(user)
+          }
+        } else if (currentUser.value) {
+          // 查看自己的个人主页
+          isOwner.value = true
+          
+          const response = await blogService.auth.getCurrentUser()
+          if (response.success && response.data) {
+            updateUserInfo(response.data)
+          } else {
+            updateUserInfo(currentUser.value)
+          }
+        }
+      } catch (error) {
+        console.error('加载用户信息失败:', error)
+        // 使用默认数据
+        if (currentUser.value && !route.params.id) {
+          updateUserInfo(currentUser.value)
+        }
+      } finally {
+        loading.value = false
+      }
     }
     
+    // 更新用户信息
+    const updateUserInfo = (user: any) => {
+      userInfo.value = {
+        id: user.id,
+        avatar: user.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.id}`,
+        name: user.nickname || user.username || '用户',
+        level: Math.min(Math.floor((user.postCount || 0) / 10) + 1, 10),
+        badges: getBadges(user),
+        bio: user.bio || '这个人很懒，什么都没有留下。',
+        profession: user.profession || '开发者',
+        location: user.location || '未知',
+        joinDate: formatJoinDate(user.createdAt),
+        stats: {
+          posts: user.postCount || 0,
+          followers: formatCount(user.followerCount || 0),
+          following: user.followingCount || 0,
+          likes: formatCount(user.likeCount || 0),
+          views: formatCount(user.viewCount || 0)
+        }
+      }
+      
+      // 更新 tabs 计数
+      contentTabs.value[0].count = user.postCount || 0
+      contentTabs.value[1].count = user.bookmarkCount || 0
+      contentTabs.value[2].count = user.followingCount || 0
+      contentTabs.value[3].count = user.followerCount || 0
+    }
+    
+    // 获取用户徽章
+    const getBadges = (user: any) => {
+      const badges: string[] = []
+      if ((user.postCount || 0) >= 10) badges.push('优秀作者')
+      if ((user.followerCount || 0) >= 100) badges.push('人气作者')
+      if ((user.likeCount || 0) >= 500) badges.push('技术达人')
+      return badges.length > 0 ? badges : ['新手作者']
+    }
+    
+    // 格式化加入日期
+    const formatJoinDate = (dateStr: string) => {
+      if (!dateStr) return '未知'
+      const date = new Date(dateStr)
+      return `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}`
+    }
+    
+    // 格式化数字
+    const formatCount = (count: number): string => {
+      if (count >= 10000) {
+        return (count / 10000).toFixed(1) + 'w'
+      }
+      if (count >= 1000) {
+        return (count / 1000).toFixed(1) + 'k'
+      }
+      return count.toString()
+    }
+    
+    // 加载用户文章
+    const loadUserPosts = async () => {
+      try {
+        const userId = userInfo.value.id || currentUser.value?.id
+        if (!userId) return
+        
+        // 使用文章列表 API 按作者筛选
+        const response = await blogService.posts.getList({
+          authorId: userId,
+          page: 1,
+          size: 10
+        })
+        
+        if (response.success && response.data) {
+          userPosts.value = response.data.content.map(post => ({
+            id: post.id,
+            title: post.title,
+            excerpt: post.excerpt || '',
+            coverImage: post.coverImage || '',
+            createdAt: formatDate(post.publishedAt || post.createdAt || ''),
+            views: formatCount(post.viewCount || 0),
+            likes: post.likeCount || 0,
+            comments: post.commentCount || 0
+          }))
+        }
+      } catch (error) {
+        console.error('加载用户文章失败:', error)
+        userPosts.value = getDefaultPosts()
+      }
+    }
+    
+    // 加载收藏列表
+    const loadBookmarks = async () => {
+      try {
+        const response = await blogService.bookmarks.getList()
+        if (response.success && response.data) {
+          bookmarks.value = response.data.content.map((item: any) => ({
+            id: item.post?.id,
+            title: item.post?.title || '',
+            excerpt: item.post?.excerpt || '',
+            coverImage: item.post?.coverImage || '',
+            author: {
+              name: item.post?.author?.nickname || item.post?.author?.username || '匿名',
+              avatar: item.post?.author?.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${item.post?.author?.id || 1}`
+            },
+            bookmarkedAt: formatDate(item.createdAt || '')
+          }))
+        }
+      } catch (error) {
+        console.error('加载收藏列表失败:', error)
+      }
+    }
+    
+    // 加载关注列表
+    const loadFollowing = async () => {
+      try {
+        const userId = userInfo.value.id || currentUser.value?.id
+        if (!userId) return
+        
+        const response = await blogService.users.getFollowing(userId)
+        if (response.success && response.data) {
+          following.value = response.data.content.map(user => ({
+            id: user.id,
+            name: user.nickname || user.username || '用户',
+            avatar: user.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.id}`,
+            bio: user.bio || '这个人很懒',
+            followers: formatCount(user.followerCount || 0),
+            isFollowed: true
+          }))
+        }
+      } catch (error) {
+        console.error('加载关注列表失败:', error)
+      }
+    }
+    
+    // 加载粉丝列表
+    const loadFollowers = async () => {
+      try {
+        const userId = userInfo.value.id || currentUser.value?.id
+        if (!userId) return
+        
+        const response = await blogService.users.getFollowers(userId)
+        if (response.success && response.data) {
+          followers.value = response.data.content.map(user => ({
+            id: user.id,
+            name: user.nickname || user.username || '用户',
+            avatar: user.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.id}`,
+            bio: user.bio || '这个人很懒',
+            followers: formatCount(user.followerCount || 0),
+            isFollowed: user.followed || false
+          }))
+        }
+      } catch (error) {
+        console.error('加载粉丝列表失败:', error)
+      }
+    }
+    
+    // 格式化日期
+    const formatDate = (dateStr: string) => {
+      if (!dateStr) return ''
+      const date = new Date(dateStr)
+      return `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}-${date.getDate().toString().padStart(2, '0')}`
+    }
+    
+    // 默认文章数据
+    const getDefaultPosts = () => [
+      {
+        id: 1,
+        title: 'Vue 3.0 Composition API 完全指南',
+        excerpt: '深入探讨 Vue 3.0 的 Composition API。',
+        coverImage: 'https://picsum.photos/300/200?random=40',
+        createdAt: '2025-12-15',
+        views: '2.3k',
+        likes: 186,
+        comments: 42
+      }
+    ]
+    
+    const toggleFollow = async () => {
+      try {
+        if (isFollowed.value) {
+          await blogService.users.unfollow(userInfo.value.id)
+          isFollowed.value = false
+        } else {
+          await blogService.users.follow(userInfo.value.id)
+          isFollowed.value = true
+        }
+      } catch (error) {
+        console.error('关注操作失败:', error)
+        isFollowed.value = !isFollowed.value
+      }
+    }
+    
+    // 监听 tab 切换
+    watch(activeTab, async (newTab) => {
+      switch (newTab) {
+        case 'posts':
+          if (userPosts.value.length === 0) await loadUserPosts()
+          break
+        case 'bookmarks':
+          if (bookmarks.value.length === 0) await loadBookmarks()
+          break
+        case 'following':
+          if (following.value.length === 0) await loadFollowing()
+          break
+        case 'followers':
+          if (followers.value.length === 0) await loadFollowers()
+          break
+      }
+    })
+    
+    onMounted(async () => {
+      await loadUserProfile()
+      await loadUserPosts()
+    })
+    
     return {
+      loading,
       isOwner,
       isFollowed,
       activeTab,

@@ -16,6 +16,7 @@ const BlogProfile = () => import('../views/blog/BlogProfile.vue')
 
 // 导入用户服务
 import { userService } from '@/services/userService'
+import { blogService } from '@/services/blogService'
 
 const routes: RouteRecordRaw[] = [
   {
@@ -39,37 +40,37 @@ const routes: RouteRecordRaw[] = [
     path: '/blog',
     name: 'BlogHome',
     component: BlogHome,
-    meta: { requiresAuth: true }
+    meta: { requiresAuth: true, isBlog: true }
   },
   {
     path: '/blog/post/:id',
     name: 'BlogPost',
     component: BlogPost,
-    meta: { requiresAuth: true }
+    meta: { requiresAuth: true, isBlog: true }
   },
   {
     path: '/blog/write',
     name: 'BlogWrite',
     component: BlogWrite,
-    meta: { requiresAuth: true }
+    meta: { requiresAuth: true, isBlog: true }
   },
   {
     path: '/blog/category/:name',
     name: 'BlogCategory',
     component: BlogCategory,
-    meta: { requiresAuth: true }
+    meta: { requiresAuth: true, isBlog: true }
   },
   {
     path: '/blog/search',
     name: 'BlogSearch',
     component: BlogSearch,
-    meta: { requiresAuth: true }
+    meta: { requiresAuth: true, isBlog: true }
   },
   {
     path: '/blog/profile',
     name: 'BlogProfile',
     component: BlogProfile,
-    meta: { requiresAuth: true }
+    meta: { requiresAuth: true, isBlog: true }
   }
 ]
 
@@ -81,15 +82,41 @@ const router = createRouter({
 // 路由守卫
 router.beforeEach((to, from, next) => {
   const requiresAuth = to.matched.some(record => record.meta?.requiresAuth)
+  const isBlogRoute = to.matched.some(record => record.meta?.isBlog)
+
+  // 检查博客系统登录状态
+  const blogLoggedIn = blogService.auth.isLoggedIn()
+  // 检查旧系统登录状态
   const currentUser = userService.getCurrentUser()
 
-  if (requiresAuth && !currentUser) {
-    next('/login')
-  } else if (to.path === '/login' && currentUser) {
-    next('/editor')
-  } else {
-    next()
+  if (requiresAuth) {
+    if (isBlogRoute) {
+      // 博客路由优先检查博客登录状态
+      if (!blogLoggedIn && !currentUser) {
+        next('/login')
+        return
+      }
+    } else {
+      // 非博客路由检查旧系统登录状态
+      if (!currentUser) {
+        next('/login')
+        return
+      }
+    }
   }
+
+  // 已登录用户访问登录页，重定向
+  if (to.path === '/login') {
+    if (blogLoggedIn) {
+      next('/blog')
+      return
+    } else if (currentUser) {
+      next('/editor')
+      return
+    }
+  }
+
+  next()
 })
 
 export default router

@@ -202,10 +202,11 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, ref, onMounted } from 'vue'
-import { useRoute } from 'vue-router'
+import { defineComponent, ref, onMounted, computed } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import BlogHeader from '@/components/blog/BlogHeader.vue'
 import BlogFooter from '@/components/blog/BlogFooter.vue'
+import { blogService, type Post, type Comment } from '@/services/blogService'
 import plusIcon from '@/assets/blog/icons/plus.svg'
 import checkIcon from '@/assets/blog/icons/check.svg'
 
@@ -217,11 +218,139 @@ export default defineComponent({
   },
   setup() {
     const route = useRoute()
+    const router = useRouter()
     
+    const loading = ref(true)
     const isFollowing = ref(false)
     const commentText = ref('')
+    const currentUser = ref(blogService.auth.getLocalUser())
     
-    const post = ref({
+    // 文章数据
+    const post = ref<any>({
+      id: 0,
+      title: '加载中...',
+      categoryName: '',
+      category: '',
+      coverImage: '',
+      tags: [],
+      author: {
+        id: 0,
+        name: '',
+        avatar: '',
+        bio: '',
+        posts: 0,
+        followers: 0
+      },
+      createdAt: '',
+      readTime: 0,
+      views: 0,
+      likes: 0,
+      bookmarks: 0,
+      comments: 0,
+      isLiked: false,
+      isBookmarked: false,
+      content: ''
+    })
+    
+    // 目录
+    const toc = ref<any[]>([])
+    
+    // 评论列表
+    const comments = ref<any[]>([])
+    
+    // 加载文章详情
+    const loadPost = async () => {
+      const postId = Number(route.params.id)
+      if (!postId) {
+        router.push('/blog')
+        return
+      }
+      
+      loading.value = true
+      try {
+        const response = await blogService.posts.getById(postId)
+        if (response.success && response.data) {
+          const data = response.data
+          post.value = {
+            id: data.id,
+            title: data.title,
+            categoryName: data.category?.name || '未分类',
+            category: data.category?.slug || '',
+            coverImage: data.coverImage || `https://picsum.photos/1200/500?random=${data.id}`,
+            tags: data.tags?.map(t => t.name) || [],
+            author: {
+              id: data.author?.id || 0,
+              name: data.author?.nickname || data.author?.username || '匿名用户',
+              avatar: data.author?.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${data.author?.id || 1}`,
+              bio: '专注技术分享，热爱编程',
+              posts: 0,
+              followers: 0
+            },
+            createdAt: data.publishedAt || data.createdAt,
+            readTime: data.readTime || 5,
+            views: data.viewCount || 0,
+            likes: data.likeCount || 0,
+            bookmarks: data.bookmarkCount || 0,
+            comments: data.commentCount || 0,
+            isLiked: data.liked || false,
+            isBookmarked: data.bookmarked || false,
+            content: data.contentHtml || data.content || ''
+          }
+          
+          // 生成目录
+          generateToc(post.value.content)
+          
+          // 加载评论
+          await loadComments()
+        }
+      } catch (error) {
+        console.error('加载文章失败:', error)
+        // 使用默认示例数据
+        post.value = getDefaultPost()
+      } finally {
+        loading.value = false
+      }
+    }
+    
+    // 生成目录
+    const generateToc = (content: string) => {
+      const parser = new DOMParser()
+      const doc = parser.parseFromString(content, 'text/html')
+      const headings = doc.querySelectorAll('h2, h3')
+      toc.value = Array.from(headings).map((h, index) => ({
+        id: h.id || `heading-${index}`,
+        text: h.textContent,
+        level: h.tagName === 'H2' ? 1 : 2
+      }))
+    }
+    
+    // 加载评论
+    const loadComments = async () => {
+      try {
+        const response = await blogService.comments.getByPost(post.value.id)
+        if (response.success && response.data) {
+          comments.value = response.data.content.map(c => ({
+            id: c.id,
+            author: {
+              id: c.author?.id,
+              name: c.author?.nickname || c.author?.username || '匿名用户',
+              avatar: c.author?.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${c.author?.id || 1}`
+            },
+            content: c.content,
+            createdAt: c.createdAt,
+            likes: c.likeCount || 0,
+            isLiked: c.liked || false
+          }))
+        }
+      } catch (error) {
+        console.error('加载评论失败:', error)
+        // 使用默认评论
+        comments.value = getDefaultComments()
+      }
+    }
+    
+    // 默认文章数据
+    const getDefaultPost = () => ({
       id: 1,
       title: 'Vue 3.0 Composition API 完全指南：从入门到精通',
       categoryName: '前端开发',
@@ -231,7 +360,7 @@ export default defineComponent({
       author: {
         name: '技术小白',
         avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=1',
-        bio: '专注前端技术分享，Vue.js 布道者，开源爱好者',
+        bio: '专注前端技术分享，Vue.js 布道者',
         posts: 128,
         followers: '2.5k'
       },
@@ -243,109 +372,22 @@ export default defineComponent({
       comments: 42,
       isLiked: false,
       isBookmarked: false,
-      content: `
-        <h2 id="intro">前言</h2>
-        <p>Vue 3.0 带来了全新的 Composition API，这是一种基于函数的 API，它让我们能够更灵活地组织组件逻辑。在本文中，我们将深入探讨 Composition API 的核心概念和最佳实践。</p>
-        
-        <h2 id="why">为什么需要 Composition API？</h2>
-        <p>在 Vue 2.x 中，我们使用选项式 API（Options API）来组织代码。虽然这种方式简单直观，但在大型组件中，相关的逻辑往往分散在不同的选项中，导致代码难以维护。</p>
-        <p>Composition API 的出现就是为了解决这个问题，它允许我们将相关的逻辑集中在一起，形成可复用的组合函数。</p>
-        
-        <h2 id="setup">setup 函数</h2>
-        <p>setup 函数是 Composition API 的入口点，它在组件创建之前执行，此时组件的 props 已经解析完毕，但组件实例尚未创建。</p>
-        <pre><code class="language-javascript">
-import { ref, onMounted } from 'vue'
-
-export default {
-  setup(props, context) {
-    const count = ref(0)
-    
-    const increment = () => {
-      count.value++
-    }
-    
-    onMounted(() => {
-      console.log('组件已挂载')
+      content: '<h2 id="intro">前言</h2><p>Vue 3.0 带来了全新的 Composition API...</p>'
     })
     
-    return {
-      count,
-      increment
-    }
-  }
-}
-        </code></pre>
-        
-        <h2 id="reactive">响应式系统</h2>
-        <p>Vue 3 提供了两种创建响应式数据的方式：ref 和 reactive。</p>
-        
-        <h3 id="ref">ref</h3>
-        <p>ref 用于创建一个响应式的引用值，它接收一个内部值并返回一个响应式且可变的 ref 对象。</p>
-        
-        <h3 id="reactive">reactive</h3>
-        <p>reactive 用于创建一个响应式对象，它接收一个普通对象然后返回该普通对象的响应式代理。</p>
-        
-        <h2 id="hooks">生命周期钩子</h2>
-        <p>Composition API 提供了与选项式 API 对应的生命周期钩子函数：</p>
-        <ul>
-          <li>onBeforeMount</li>
-          <li>onMounted</li>
-          <li>onBeforeUpdate</li>
-          <li>onUpdated</li>
-          <li>onBeforeUnmount</li>
-          <li>onUnmounted</li>
-        </ul>
-        
-        <h2 id="conclusion">总结</h2>
-        <p>Composition API 为 Vue 开发者提供了更灵活、更强大的代码组织方式。虽然学习曲线可能稍陡，但掌握后将大大提高开发效率和代码质量。</p>
-      `
-    })
-    
-    const toc = ref([
-      { id: 'intro', text: '前言', level: 1 },
-      { id: 'why', text: '为什么需要 Composition API？', level: 1 },
-      { id: 'setup', text: 'setup 函数', level: 1 },
-      { id: 'reactive', text: '响应式系统', level: 1 },
-      { id: 'ref', text: 'ref', level: 2 },
-      { id: 'reactive', text: 'reactive', level: 2 },
-      { id: 'hooks', text: '生命周期钩子', level: 1 },
-      { id: 'conclusion', text: '总结', level: 1 }
-    ])
-    
-    const comments = ref([
+    // 默认评论数据
+    const getDefaultComments = () => [
       {
         id: 1,
-        author: {
-          name: '前端小白',
-          avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=10'
-        },
+        author: { name: '前端小白', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=10' },
         content: '写得太好了！终于理解了 Composition API 的精髓，感谢分享！',
         createdAt: '2025-12-15',
         likes: 12
-      },
-      {
-        id: 2,
-        author: {
-          name: 'Vue爱好者',
-          avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=11'
-        },
-        content: '请问 ref 和 reactive 在实际项目中该如何选择？有没有什么最佳实践？',
-        createdAt: '2025-12-15',
-        likes: 8
-      },
-      {
-        id: 3,
-        author: {
-          name: '代码工匠',
-          avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=12'
-        },
-        content: '期待作者能继续分享更多关于 Vue 3 的高级用法，比如自定义指令和插件开发。',
-        createdAt: '2025-12-14',
-        likes: 5
       }
-    ])
+    ]
     
     const formatDate = (dateStr: string) => {
+      if (!dateStr) return ''
       const date = new Date(dateStr)
       const now = new Date()
       const diff = now.getTime() - date.getTime()
@@ -358,18 +400,47 @@ export default {
       return `${date.getFullYear()}年${date.getMonth() + 1}月${date.getDate()}日`
     }
     
-    const toggleFollow = () => {
+    const toggleFollow = async () => {
+      // TODO: 调用关注 API
       isFollowing.value = !isFollowing.value
     }
     
-    const toggleLike = () => {
-      post.value.isLiked = !post.value.isLiked
-      post.value.likes += post.value.isLiked ? 1 : -1
+    const toggleLike = async () => {
+      try {
+        if (post.value.isLiked) {
+          await blogService.posts.unlike(post.value.id)
+          post.value.isLiked = false
+          post.value.likes--
+        } else {
+          await blogService.posts.like(post.value.id)
+          post.value.isLiked = true
+          post.value.likes++
+        }
+      } catch (error) {
+        console.error('点赞失败:', error)
+        // 本地切换
+        post.value.isLiked = !post.value.isLiked
+        post.value.likes += post.value.isLiked ? 1 : -1
+      }
     }
     
-    const toggleBookmark = () => {
-      post.value.isBookmarked = !post.value.isBookmarked
-      post.value.bookmarks += post.value.isBookmarked ? 1 : -1
+    const toggleBookmark = async () => {
+      try {
+        if (post.value.isBookmarked) {
+          await blogService.posts.unbookmark(post.value.id)
+          post.value.isBookmarked = false
+          post.value.bookmarks--
+        } else {
+          await blogService.posts.bookmark(post.value.id)
+          post.value.isBookmarked = true
+          post.value.bookmarks++
+        }
+      } catch (error) {
+        console.error('收藏失败:', error)
+        // 本地切换
+        post.value.isBookmarked = !post.value.isBookmarked
+        post.value.bookmarks += post.value.isBookmarked ? 1 : -1
+      }
     }
     
     const scrollToComments = () => {
@@ -377,17 +448,44 @@ export default {
     }
     
     const sharePost = () => {
-      // 分享逻辑
-      console.log('分享文章')
+      const url = window.location.href
+      navigator.clipboard.writeText(url).then(() => {
+        alert('链接已复制到剪贴板')
+      })
     }
     
-    const submitComment = () => {
-      if (commentText.value.trim()) {
+    const submitComment = async () => {
+      if (!commentText.value.trim()) return
+      
+      try {
+        const response = await blogService.comments.create({
+          postId: post.value.id,
+          content: commentText.value
+        })
+        
+        if (response.success && response.data) {
+          const newComment = response.data
+          comments.value.unshift({
+            id: newComment.id,
+            author: {
+              name: newComment.author?.nickname || newComment.author?.username || '我',
+              avatar: newComment.author?.avatar || currentUser.value?.avatar || ''
+            },
+            content: newComment.content,
+            createdAt: newComment.createdAt,
+            likes: 0
+          })
+          commentText.value = ''
+          post.value.comments++
+        }
+      } catch (error) {
+        console.error('发表评论失败:', error)
+        // 本地添加
         comments.value.unshift({
           id: Date.now(),
           author: {
-            name: '我',
-            avatar: ''
+            name: currentUser.value?.nickname || currentUser.value?.username || '我',
+            avatar: currentUser.value?.avatar || ''
           },
           content: commentText.value,
           createdAt: new Date().toISOString(),
@@ -398,21 +496,36 @@ export default {
       }
     }
     
-    const likeComment = (commentId: number) => {
-      const comment = comments.value.find(c => c.id === commentId)
-      if (comment) {
-        comment.likes++
+    const likeComment = async (commentId: number) => {
+      try {
+        await blogService.comments.like(commentId)
+        const comment = comments.value.find(c => c.id === commentId)
+        if (comment) {
+          comment.likes++
+        }
+      } catch (error) {
+        console.error('点赞评论失败:', error)
+        const comment = comments.value.find(c => c.id === commentId)
+        if (comment) {
+          comment.likes++
+        }
       }
     }
     
     const replyComment = (commentId: number) => {
       console.log('回复评论:', commentId)
+      // TODO: 实现回复功能
     }
+    
+    onMounted(() => {
+      loadPost()
+    })
     
     return {
       post,
       toc,
       comments,
+      loading,
       isFollowing,
       commentText,
       plusIcon,

@@ -169,6 +169,7 @@
 
 <script>
 import { userService } from '@/services/userService'
+import { blogService } from '@/services/blogService'
 
 export default {
   name: 'LoginNEPS',
@@ -195,20 +196,36 @@ export default {
       this.loginLoading = true
       
       try {
-        const response = await userService.login(this.loginForm)
+        // 同时尝试博客系统登录
+        const blogResponse = await blogService.auth.login(this.loginForm)
         
-        if (response.success) {
-          // 保存token和用户信息
-          localStorage.setItem('token', response.data.token)
-          localStorage.setItem('username', response.data.username)
+        if (blogResponse.success) {
+          // 保存博客系统的 token 和用户信息
+          blogService.auth.saveLoginInfo(blogResponse.data.token, blogResponse.data.user)
           
-          // 跳转到主页或编辑器页面
+          // 同时保存兼容旧系统的信息
+          localStorage.setItem('token', blogResponse.data.token)
+          localStorage.setItem('username', blogResponse.data.user.username)
+          
+          // 跳转到首页
           this.$router.push('/editor')
         } else {
-          this.loginError = response.message
+          this.loginError = blogResponse.message
         }
       } catch (error) {
-        this.loginError = error.message || '登录失败，请重试'
+        // 如果博客登录失败，尝试旧系统登录
+        try {
+          const response = await userService.login(this.loginForm)
+          if (response.success) {
+            localStorage.setItem('token', response.data.token)
+            localStorage.setItem('username', response.data.username)
+            this.$router.push('/editor')
+          } else {
+            this.loginError = response.message
+          }
+        } catch (e) {
+          this.loginError = error.message || '登录失败，请重试'
+        }
       } finally {
         this.loginLoading = false
       }
@@ -225,20 +242,40 @@ export default {
       }
       
       try {
-        const response = await userService.register(this.registerForm)
+        // 使用博客系统注册
+        const blogResponse = await blogService.auth.register({
+          username: this.registerForm.username,
+          password: this.registerForm.password,
+          phone: this.registerForm.phone
+        })
         
-        if (response.success) {
-          // 保存token和用户信息
-          localStorage.setItem('token', response.data.token)
-          localStorage.setItem('username', response.data.username)
+        if (blogResponse.success) {
+          // 保存博客系统的 token 和用户信息
+          blogService.auth.saveLoginInfo(blogResponse.data.token, blogResponse.data.user)
           
-          // 跳转到主页或编辑器页面
+          // 同时保存兼容旧系统的信息
+          localStorage.setItem('token', blogResponse.data.token)
+          localStorage.setItem('username', blogResponse.data.user.username)
+          
+          // 跳转到博客首页
           this.$router.push('/editor')
         } else {
-          this.registerError = response.message
+          this.registerError = blogResponse.message
         }
       } catch (error) {
-        this.registerError = error.message || '注册失败，请重试'
+        // 如果博客注册失败，尝试旧系统注册
+        try {
+          const response = await userService.register(this.registerForm)
+          if (response.success) {
+            localStorage.setItem('token', response.data.token)
+            localStorage.setItem('username', response.data.username)
+            this.$router.push('/editor')
+          } else {
+            this.registerError = response.message
+          }
+        } catch (e) {
+          this.registerError = error.message || '注册失败，请重试'
+        }
       } finally {
         this.registerLoading = false
       }

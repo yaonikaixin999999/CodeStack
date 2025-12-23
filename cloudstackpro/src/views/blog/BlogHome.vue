@@ -55,14 +55,20 @@
                   :key="tab.id" 
                   class="tab-btn"
                   :class="{ active: activeTab === tab.id }"
-                  @click="activeTab = tab.id"
+                  @click="switchTab(tab.id)"
                 >
                   {{ tab.name }}
                 </button>
               </div>
             </div>
             
-            <div class="posts-grid">
+            <!-- 加载状态 -->
+            <div v-if="loading" class="loading-state">
+              <div class="loading-spinner"></div>
+              <p>加载中...</p>
+            </div>
+            
+            <div v-else class="posts-grid">
               <PostCard 
                 v-for="(post, index) in displayedPosts" 
                 :key="post.id" 
@@ -94,12 +100,13 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, ref, computed } from 'vue'
+import { defineComponent, ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import BlogHeader from '@/components/blog/BlogHeader.vue'
 import BlogFooter from '@/components/blog/BlogFooter.vue'
 import BlogSidebar from '@/components/blog/BlogSidebar.vue'
 import PostCard from '@/components/blog/PostCard.vue'
+import { blogService, type PostListItem, type Category } from '@/services/blogService'
 
 // 导入图标
 import homeIcon from '@/assets/blog/icons/home.svg'
@@ -122,15 +129,21 @@ export default defineComponent({
     const searchQuery = ref('')
     const activeCategory = ref('all')
     const activeTab = ref('latest')
-    const currentPage = ref(1)
+    const currentPage = ref(0)
+    const totalPages = ref(0)
+    const loading = ref(false)
     
-    const categories = ref([
+    // 默认分类（用于没有从后端加载时）
+    const defaultCategories = [
       { id: 'all', name: '全部', icon: homeIcon },
       { id: 'frontend', name: '前端开发', icon: codeIcon },
       { id: 'backend', name: '后端开发', icon: bookIcon },
       { id: 'ai', name: '人工智能', icon: zapIcon },
       { id: 'other', name: '其他', icon: categoryIcon }
-    ])
+    ]
+    
+    const categories = ref(defaultCategories)
+    const serverCategories = ref<Category[]>([])
     
     const tabs = ref([
       { id: 'latest', name: '最新' },
@@ -138,137 +151,131 @@ export default defineComponent({
       { id: 'recommend', name: '推荐' }
     ])
     
-    const posts = ref([
+    // 文章列表
+    const posts = ref<any[]>([])
+    
+    // 加载分类
+    const loadCategories = async () => {
+      try {
+        const response = await blogService.categories.getAll()
+        if (response.success && response.data) {
+          serverCategories.value = response.data
+          // 映射分类到前端显示格式
+          const iconMap: Record<string, string> = {
+            '前端开发': codeIcon,
+            '后端开发': bookIcon,
+            '人工智能': zapIcon
+          }
+          const mappedCategories = response.data.map(cat => ({
+            id: cat.id.toString(),
+            name: cat.name,
+            icon: iconMap[cat.name] || categoryIcon,
+            dbId: cat.id
+          }))
+          categories.value = [
+            { id: 'all', name: '全部', icon: homeIcon },
+            ...mappedCategories
+          ]
+        }
+      } catch (error) {
+        console.error('加载分类失败:', error)
+      }
+    }
+    
+    // 加载文章列表
+    const loadPosts = async () => {
+      loading.value = true
+      try {
+        let response
+        
+        if (activeTab.value === 'hot') {
+          // 热门文章
+          response = await blogService.posts.getHot(20)
+          if (response.success) {
+            posts.value = transformPosts(response.data || [])
+          }
+        } else if (activeTab.value === 'recommend') {
+          // 推荐文章
+          response = await blogService.posts.getFeatured(20)
+          if (response.success) {
+            posts.value = transformPosts(response.data || [])
+          }
+        } else {
+          // 最新文章
+          const params: any = {
+            page: currentPage.value,
+            size: 10
+          }
+          
+          // 如果选择了分类
+          if (activeCategory.value !== 'all') {
+            const cat = categories.value.find(c => c.id === activeCategory.value)
+            if (cat && (cat as any).dbId) {
+              params.categoryId = (cat as any).dbId
+            }
+          }
+          
+          response = await blogService.posts.getList(params)
+          if (response.success && response.data) {
+            const pageData = response.data
+            posts.value = transformPosts(pageData.content || [])
+            totalPages.value = pageData.totalPages
+          }
+        }
+      } catch (error) {
+        console.error('加载文章失败:', error)
+        // 加载失败时使用示例数据
+        posts.value = getDefaultPosts()
+      } finally {
+        loading.value = false
+      }
+    }
+    
+    // 转换后端数据格式到前端格式
+    const transformPosts = (data: PostListItem[]): any[] => {
+      return data.map(post => ({
+        id: post.id,
+        title: post.title,
+        excerpt: post.excerpt || '',
+        coverImage: post.coverImage || `https://picsum.photos/800/400?random=${post.id}`,
+        category: post.category?.name || '未分类',
+        tags: post.tags?.map(t => t.name) || [],
+        author: {
+          name: post.author?.nickname || post.author?.username || '匿名用户',
+          avatar: post.author?.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${post.author?.id || 1}`
+        },
+        createdAt: post.publishedAt ? new Date(post.publishedAt).toLocaleDateString() : '未知',
+        views: post.viewCount || 0,
+        likes: post.likeCount || 0,
+        comments: post.commentCount || 0,
+        isLiked: false,
+        isBookmarked: false,
+        isTop: post.isTop,
+        isFeatured: post.isFeatured
+      }))
+    }
+    
+    // 默认示例数据
+    const getDefaultPosts = () => [
       {
         id: 1,
         title: 'Vue 3.0 Composition API 完全指南：从入门到精通',
-        excerpt: '深入探讨 Vue 3.0 的 Composition API，包括 setup 函数、响应式系统、生命周期钩子等核心概念，帮助你快速掌握新版本的开发方式。',
+        excerpt: '深入探讨 Vue 3.0 的 Composition API，包括 setup 函数、响应式系统、生命周期钩子等核心概念。',
         coverImage: 'https://picsum.photos/800/400?random=1',
         category: '前端开发',
         tags: ['Vue.js', 'JavaScript', '前端框架'],
-        author: {
-          name: '技术小白',
-          avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=1'
-        },
+        author: { name: '技术小白', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=1' },
         createdAt: '2025-12-15',
         views: 2356,
         likes: 186,
         comments: 42,
         isLiked: false,
         isBookmarked: false
-      },
-      {
-        id: 2,
-        title: 'TypeScript 高级类型系统深入理解：泛型与类型推断',
-        excerpt: '本文将深入讲解 TypeScript 的高级类型特性，包括泛型约束、条件类型、映射类型等，让你的代码更加类型安全。',
-        coverImage: 'https://picsum.photos/800/400?random=2',
-        category: '前端开发',
-        tags: ['TypeScript', '类型系统', '编程语言'],
-        author: {
-          name: '代码大师',
-          avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=2'
-        },
-        createdAt: '2025-12-14',
-        views: 1824,
-        likes: 142,
-        comments: 35,
-        isLiked: true,
-        isBookmarked: false
-      },
-      {
-        id: 3,
-        title: 'Node.js 微服务架构实践：从单体到分布式',
-        excerpt: '探索如何将传统的单体应用拆分为微服务架构，涵盖服务发现、负载均衡、API网关等核心概念。',
-        coverImage: 'https://picsum.photos/800/400?random=3',
-        category: '后端开发',
-        tags: ['Node.js', '微服务', '架构设计'],
-        author: {
-          name: '架构师老王',
-          avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=3'
-        },
-        createdAt: '2025-12-13',
-        views: 1567,
-        likes: 98,
-        comments: 28,
-        isLiked: false,
-        isBookmarked: true
-      },
-      {
-        id: 4,
-        title: 'React Hooks 最佳实践：自定义 Hook 设计模式',
-        excerpt: '学习如何设计和实现高质量的自定义 Hook，提高代码复用性和可维护性，让你的 React 项目更加优雅。',
-        coverImage: 'https://picsum.photos/800/400?random=4',
-        category: '前端开发',
-        tags: ['React', 'Hooks', '设计模式'],
-        author: {
-          name: 'React爱好者',
-          avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=4'
-        },
-        createdAt: '2025-12-12',
-        views: 1345,
-        likes: 112,
-        comments: 22,
-        isLiked: false,
-        isBookmarked: false
-      },
-      {
-        id: 5,
-        title: 'Python 机器学习入门：使用 Scikit-learn 构建第一个模型',
-        excerpt: '本教程将带你从零开始学习机器学习，使用 Python 和 Scikit-learn 库构建你的第一个分类模型。',
-        coverImage: 'https://picsum.photos/800/400?random=5',
-        category: '人工智能',
-        tags: ['Python', '机器学习', 'Scikit-learn'],
-        author: {
-          name: 'AI探索者',
-          avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=5'
-        },
-        createdAt: '2025-12-11',
-        views: 2108,
-        likes: 167,
-        comments: 38,
-        isLiked: false,
-        isBookmarked: false
-      },
-      {
-        id: 6,
-        title: '前端性能优化实战：让你的网站快如闪电',
-        excerpt: '从代码分割、懒加载、缓存策略到性能监控，全方位提升你的网站性能，提供极致的用户体验。',
-        coverImage: 'https://picsum.photos/800/400?random=6',
-        category: '前端开发',
-        tags: ['性能优化', 'Web开发', '用户体验'],
-        author: {
-          name: '性能调优师',
-          avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=6'
-        },
-        createdAt: '2025-12-10',
-        views: 1876,
-        likes: 145,
-        comments: 31,
-        isLiked: true,
-        isBookmarked: true
       }
-    ])
+    ]
     
     const displayedPosts = computed(() => {
-      let filtered = posts.value
-      
-      if (activeCategory.value !== 'all') {
-        const categoryMap: Record<string, string> = {
-          'frontend': '前端开发',
-          'backend': '后端开发',
-          'ai': '人工智能',
-          'other': '其他'
-        }
-        filtered = filtered.filter(p => p.category === categoryMap[activeCategory.value])
-      }
-      
-      if (activeTab.value === 'hot') {
-        filtered = [...filtered].sort((a, b) => b.views - a.views)
-      } else if (activeTab.value === 'recommend') {
-        filtered = [...filtered].sort((a, b) => b.likes - a.likes)
-      }
-      
-      return filtered
+      return posts.value
     })
     
     const handleSearch = () => {
@@ -279,31 +286,92 @@ export default defineComponent({
     
     const setActiveCategory = (categoryId: string) => {
       activeCategory.value = categoryId
+      currentPage.value = 0
+      loadPosts()
     }
     
-    const handleLike = (postId: number) => {
+    const handleLike = async (postId: number) => {
       const post = posts.value.find(p => p.id === postId)
       if (post) {
-        post.isLiked = !post.isLiked
-        post.likes += post.isLiked ? 1 : -1
+        try {
+          if (post.isLiked) {
+            await blogService.posts.unlike(postId)
+            post.isLiked = false
+            post.likes--
+          } else {
+            await blogService.posts.like(postId)
+            post.isLiked = true
+            post.likes++
+          }
+        } catch (error) {
+          console.error('点赞操作失败:', error)
+          // 本地切换状态（用于演示）
+          post.isLiked = !post.isLiked
+          post.likes += post.isLiked ? 1 : -1
+        }
       }
     }
     
-    const handleBookmark = (postId: number) => {
+    const handleBookmark = async (postId: number) => {
       const post = posts.value.find(p => p.id === postId)
       if (post) {
-        post.isBookmarked = !post.isBookmarked
+        try {
+          if (post.isBookmarked) {
+            await blogService.posts.unbookmark(postId)
+            post.isBookmarked = false
+          } else {
+            await blogService.posts.bookmark(postId)
+            post.isBookmarked = true
+          }
+        } catch (error) {
+          console.error('收藏操作失败:', error)
+          // 本地切换状态（用于演示）
+          post.isBookmarked = !post.isBookmarked
+        }
       }
     }
     
     const handleShare = (post: any) => {
-      console.log('Share post:', post.title)
+      // 复制链接到剪贴板
+      const url = `${window.location.origin}/blog/post/${post.id}`
+      navigator.clipboard.writeText(url).then(() => {
+        alert('链接已复制到剪贴板')
+      })
     }
     
-    const loadMorePosts = () => {
-      currentPage.value++
-      // 这里可以添加加载更多文章的逻辑
+    const loadMorePosts = async () => {
+      if (currentPage.value < totalPages.value - 1) {
+        currentPage.value++
+        loading.value = true
+        try {
+          const response = await blogService.posts.getList({
+            page: currentPage.value,
+            size: 10
+          })
+          if (response.success && response.data) {
+            const newPosts = transformPosts(response.data.content || [])
+            posts.value = [...posts.value, ...newPosts]
+          }
+        } catch (error) {
+          console.error('加载更多失败:', error)
+        } finally {
+          loading.value = false
+        }
+      }
     }
+    
+    // 切换标签时重新加载
+    const switchTab = (tabId: string) => {
+      activeTab.value = tabId
+      currentPage.value = 0
+      loadPosts()
+    }
+    
+    // 组件挂载时加载数据
+    onMounted(() => {
+      loadCategories()
+      loadPosts()
+    })
     
     return {
       searchQuery,
@@ -312,12 +380,14 @@ export default defineComponent({
       categories,
       tabs,
       displayedPosts,
+      loading,
       handleSearch,
       setActiveCategory,
       handleLike,
       handleBookmark,
       handleShare,
-      loadMorePosts
+      loadMorePosts,
+      switchTab
     }
   }
 })

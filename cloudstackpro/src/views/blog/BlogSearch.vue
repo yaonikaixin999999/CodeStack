@@ -144,12 +144,13 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, ref, onMounted } from 'vue'
-import { useRoute } from 'vue-router'
+import { defineComponent, ref, onMounted, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import BlogHeader from '@/components/blog/BlogHeader.vue'
 import BlogFooter from '@/components/blog/BlogFooter.vue'
 import BlogSidebar from '@/components/blog/BlogSidebar.vue'
 import PostCard from '@/components/blog/PostCard.vue'
+import { blogService } from '@/services/blogService'
 
 import bookIcon from '@/assets/blog/icons/book.svg'
 import userIcon from '@/assets/blog/icons/user.svg'
@@ -165,6 +166,7 @@ export default defineComponent({
   },
   setup() {
     const route = useRoute()
+    const router = useRouter()
     
     const searchQuery = ref('')
     const hasSearched = ref(false)
@@ -172,6 +174,10 @@ export default defineComponent({
     const searchTime = ref(0)
     const activeFilter = ref('all')
     const sortBy = ref('relevance')
+    const loading = ref(false)
+    const currentPage = ref(1)
+    const pageSize = ref(10)
+    const hasMore = ref(true)
     
     const hotSearchTags = ref([
       'Vue.js', 'React', 'TypeScript', 'Node.js', 'Python',
@@ -179,12 +185,202 @@ export default defineComponent({
     ])
     
     const filterTabs = ref([
-      { id: 'all', name: '全部', count: 128, icon: categoryIcon },
-      { id: 'posts', name: '文章', count: 98, icon: bookIcon },
-      { id: 'authors', name: '作者', count: 30, icon: userIcon }
+      { id: 'all', name: '全部', count: 0, icon: categoryIcon },
+      { id: 'posts', name: '文章', count: 0, icon: bookIcon },
+      { id: 'authors', name: '作者', count: 0, icon: userIcon }
     ])
     
-    const searchResults = ref([
+    const searchResults = ref<any[]>([])
+    const recommendPosts = ref<any[]>([])
+    
+    // 加载热门标签
+    const loadHotTags = async () => {
+      try {
+        const response = await blogService.tags.getHot(10)
+        if (response.success && response.data && response.data.length > 0) {
+          hotSearchTags.value = response.data.map(t => t.name)
+        }
+      } catch (error) {
+        console.error('加载热门标签失败:', error)
+      }
+    }
+    
+    // 加载推荐文章
+    const loadRecommendPosts = async () => {
+      try {
+        const response = await blogService.posts.getFeatured(4)
+        if (response.success && response.data) {
+          recommendPosts.value = response.data.map(post => ({
+            id: post.id,
+            title: post.title,
+            excerpt: post.excerpt || '',
+            coverImage: post.coverImage || `https://picsum.photos/800/400?random=${post.id}`,
+            category: post.category?.name || '未分类',
+            tags: post.tags?.map(t => t.name) || [],
+            author: {
+              name: post.author?.nickname || post.author?.username || '匿名',
+              avatar: post.author?.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${post.author?.id || 1}`
+            },
+            createdAt: post.publishedAt || post.createdAt,
+            views: post.viewCount || 0,
+            likes: post.likeCount || 0,
+            comments: post.commentCount || 0,
+            isLiked: post.liked || false,
+            isBookmarked: post.bookmarked || false
+          }))
+        }
+      } catch (error) {
+        console.error('加载推荐文章失败:', error)
+        // 使用默认数据
+        recommendPosts.value = getDefaultRecommendPosts()
+      }
+    }
+    
+    // 执行搜索
+    const performSearch = async () => {
+      if (!searchQuery.value.trim()) return
+      
+      hasSearched.value = true
+      loading.value = true
+      currentPage.value = 1
+      const startTime = Date.now()
+      
+      try {
+        // 使用文章列表 API 进行搜索（后端支持关键词搜索）
+        const response = await blogService.posts.getList({
+          page: currentPage.value,
+          size: pageSize.value,
+          keyword: searchQuery.value,
+          sort: sortBy.value === 'latest' ? 'createdAt,desc' : 
+                sortBy.value === 'popular' ? 'viewCount,desc' : undefined
+        })
+        
+        if (response.success && response.data) {
+          searchResults.value = response.data.content.map(post => ({
+            id: post.id,
+            title: post.title,
+            excerpt: post.excerpt || post.content?.substring(0, 150) || '',
+            coverImage: post.coverImage || '',
+            author: {
+              name: post.author?.nickname || post.author?.username || '匿名',
+              avatar: post.author?.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${post.author?.id || 1}`
+            },
+            createdAt: formatDate(post.publishedAt || post.createdAt || ''),
+            views: formatCount(post.viewCount || 0)
+          }))
+          
+          totalResults.value = response.data.totalElements || searchResults.value.length
+          hasMore.value = !response.data.last
+          
+          filterTabs.value[0].count = totalResults.value
+          filterTabs.value[1].count = totalResults.value
+        }
+      } catch (error) {
+        console.error('搜索失败:', error)
+        searchResults.value = getDefaultSearchResults()
+        totalResults.value = searchResults.value.length
+      } finally {
+        searchTime.value = Date.now() - startTime
+        loading.value = false
+      }
+    }
+    
+    // 按标签搜索
+    const searchByTag = async (tag: string) => {
+      searchQuery.value = tag
+      hasSearched.value = true
+      loading.value = true
+      currentPage.value = 1
+      const startTime = Date.now()
+      
+      try {
+        const response = await blogService.tags.getPosts(tag, currentPage.value, pageSize.value)
+        if (response.success && response.data) {
+          searchResults.value = response.data.content.map(post => ({
+            id: post.id,
+            title: post.title,
+            excerpt: post.excerpt || '',
+            coverImage: post.coverImage || '',
+            author: {
+              name: post.author?.nickname || post.author?.username || '匿名',
+              avatar: post.author?.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${post.author?.id || 1}`
+            },
+            createdAt: formatDate(post.publishedAt || post.createdAt || ''),
+            views: formatCount(post.viewCount || 0)
+          }))
+          
+          totalResults.value = response.data.totalElements || searchResults.value.length
+          hasMore.value = !response.data.last
+        }
+      } catch (error) {
+        console.error('标签搜索失败:', error)
+        await performSearch() // 降级到普通搜索
+      } finally {
+        searchTime.value = Date.now() - startTime
+        loading.value = false
+      }
+    }
+    
+    // 加载更多
+    const loadMore = async () => {
+      if (!hasMore.value || loading.value) return
+      
+      currentPage.value++
+      loading.value = true
+      
+      try {
+        const response = await blogService.posts.getList({
+          page: currentPage.value,
+          size: pageSize.value,
+          keyword: searchQuery.value
+        })
+        
+        if (response.success && response.data) {
+          const newResults = response.data.content.map(post => ({
+            id: post.id,
+            title: post.title,
+            excerpt: post.excerpt || '',
+            coverImage: post.coverImage || '',
+            author: {
+              name: post.author?.nickname || post.author?.username || '匿名',
+              avatar: post.author?.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${post.author?.id || 1}`
+            },
+            createdAt: formatDate(post.publishedAt || post.createdAt || ''),
+            views: formatCount(post.viewCount || 0)
+          }))
+          
+          searchResults.value.push(...newResults)
+          hasMore.value = !response.data.last
+        }
+      } catch (error) {
+        console.error('加载更多失败:', error)
+        currentPage.value--
+      } finally {
+        loading.value = false
+      }
+    }
+    
+    const formatDate = (dateStr: string) => {
+      if (!dateStr) return ''
+      const date = new Date(dateStr)
+      return `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}-${date.getDate().toString().padStart(2, '0')}`
+    }
+    
+    const formatCount = (count: number) => {
+      if (count >= 1000) {
+        return (count / 1000).toFixed(1) + 'k'
+      }
+      return count.toString()
+    }
+    
+    const highlightText = (text: string) => {
+      if (!searchQuery.value) return text
+      const regex = new RegExp(`(${searchQuery.value})`, 'gi')
+      return text.replace(regex, '<mark>$1</mark>')
+    }
+    
+    // 默认搜索结果
+    const getDefaultSearchResults = () => [
       {
         id: 1,
         title: 'Vue 3.0 Composition API 完全指南',
@@ -193,28 +389,11 @@ export default defineComponent({
         author: { name: '技术小白', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=1' },
         createdAt: '2025-12-15',
         views: '2.3k'
-      },
-      {
-        id: 2,
-        title: 'Vue Router 4.0 新特性解析',
-        excerpt: '详细介绍 Vue Router 4.0 的新特性，包括动态路由、导航守卫等...',
-        coverImage: 'https://picsum.photos/200/150?random=21',
-        author: { name: '路由专家', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=7' },
-        createdAt: '2025-12-14',
-        views: '1.8k'
-      },
-      {
-        id: 3,
-        title: 'Vuex 到 Pinia 迁移指南',
-        excerpt: '从 Vuex 迁移到 Pinia 的完整指南，包括状态管理的最佳实践...',
-        coverImage: '',
-        author: { name: '状态管理者', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=8' },
-        createdAt: '2025-12-13',
-        views: '1.5k'
       }
-    ])
+    ]
     
-    const recommendPosts = ref([
+    // 默认推荐文章
+    const getDefaultRecommendPosts = () => [
       {
         id: 1,
         title: 'Vue 3.0 Composition API 完全指南',
@@ -229,87 +408,28 @@ export default defineComponent({
         comments: 42,
         isLiked: false,
         isBookmarked: false
-      },
-      {
-        id: 2,
-        title: 'TypeScript 高级类型详解',
-        excerpt: '深入讲解 TypeScript 的高级类型特性。',
-        coverImage: 'https://picsum.photos/800/400?random=31',
-        category: '前端开发',
-        tags: ['TypeScript'],
-        author: { name: '代码大师', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=2' },
-        createdAt: '2025-12-14',
-        views: 1824,
-        likes: 142,
-        comments: 35,
-        isLiked: false,
-        isBookmarked: false
-      },
-      {
-        id: 3,
-        title: 'Node.js 微服务架构实践',
-        excerpt: '探索如何构建微服务架构。',
-        coverImage: 'https://picsum.photos/800/400?random=32',
-        category: '后端开发',
-        tags: ['Node.js', '微服务'],
-        author: { name: '架构师老王', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=3' },
-        createdAt: '2025-12-13',
-        views: 1567,
-        likes: 98,
-        comments: 28,
-        isLiked: false,
-        isBookmarked: false
-      },
-      {
-        id: 4,
-        title: 'React Hooks 最佳实践',
-        excerpt: '学习如何设计高质量的自定义 Hook。',
-        coverImage: 'https://picsum.photos/800/400?random=33',
-        category: '前端开发',
-        tags: ['React', 'Hooks'],
-        author: { name: 'React爱好者', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=4' },
-        createdAt: '2025-12-12',
-        views: 1345,
-        likes: 112,
-        comments: 22,
-        isLiked: false,
-        isBookmarked: false
       }
-    ])
+    ]
     
-    const performSearch = () => {
-      if (searchQuery.value.trim()) {
-        hasSearched.value = true
-        totalResults.value = 128
-        searchTime.value = 35
+    // 监听排序变化
+    watch(sortBy, () => {
+      if (hasSearched.value) {
+        performSearch()
       }
-    }
+    })
     
-    const searchByTag = (tag: string) => {
-      searchQuery.value = tag
-      performSearch()
-    }
-    
-    const highlightText = (text: string) => {
-      if (!searchQuery.value) return text
-      const regex = new RegExp(`(${searchQuery.value})`, 'gi')
-      return text.replace(regex, '<mark>$1</mark>')
-    }
-    
-    const loadMore = () => {
-      console.log('加载更多')
-    }
-    
-    onMounted(() => {
+    onMounted(async () => {
+      await loadHotTags()
+      await loadRecommendPosts()
+      
       const query = route.query.q as string
       const tag = route.query.tag as string
       
       if (query) {
         searchQuery.value = query
-        performSearch()
+        await performSearch()
       } else if (tag) {
-        searchQuery.value = tag
-        performSearch()
+        await searchByTag(tag)
       }
     })
     
@@ -324,6 +444,8 @@ export default defineComponent({
       filterTabs,
       searchResults,
       recommendPosts,
+      loading,
+      hasMore,
       performSearch,
       searchByTag,
       highlightText,

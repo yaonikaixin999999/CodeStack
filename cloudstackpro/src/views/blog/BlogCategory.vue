@@ -124,12 +124,13 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, ref, computed } from 'vue'
+import { defineComponent, ref, computed, onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import BlogHeader from '@/components/blog/BlogHeader.vue'
 import BlogFooter from '@/components/blog/BlogFooter.vue'
 import BlogSidebar from '@/components/blog/BlogSidebar.vue'
 import PostCard from '@/components/blog/PostCard.vue'
+import { blogService } from '@/services/blogService'
 
 import codeIcon from '@/assets/blog/icons/code.svg'
 import bookIcon from '@/assets/blog/icons/book.svg'
@@ -148,22 +149,32 @@ export default defineComponent({
   setup() {
     const route = useRoute()
     
+    const loading = ref(false)
     const currentCategoryId = computed(() => route.params.name as string || 'tech')
     const currentPage = ref(1)
     const currentSort = ref('latest')
     const viewMode = ref('grid')
-    const totalPages = ref(5)
+    const totalPages = ref(1)
     
-    const allCategories = ref([
-      { id: 'tech', name: '技术分享', icon: codeIcon, description: '技术文章、教程和经验分享', postCount: 1234, authorCount: 156, viewCount: '12.5w' },
-      { id: 'frontend', name: '前端开发', icon: bookIcon, description: '前端技术、框架和最佳实践', postCount: 856, authorCount: 98, viewCount: '8.6w' },
-      { id: 'backend', name: '后端开发', icon: settingsIcon, description: '后端架构、数据库和API设计', postCount: 678, authorCount: 76, viewCount: '6.8w' },
-      { id: 'ai', name: '人工智能', icon: zapIcon, description: '机器学习、深度学习和AI应用', postCount: 432, authorCount: 54, viewCount: '4.5w' },
-      { id: 'other', name: '其他', icon: categoryIcon, description: '职场、生活和其他话题', postCount: 321, authorCount: 45, viewCount: '3.2w' }
+    // 默认图标映射
+    const iconMap: Record<string, string> = {
+      tech: codeIcon,
+      frontend: bookIcon,
+      backend: settingsIcon,
+      ai: zapIcon,
+      default: categoryIcon
+    }
+    
+    const allCategories = ref<any[]>([
+      { id: 'tech', name: '技术分享', icon: codeIcon, description: '技术文章、教程和经验分享', postCount: 0, authorCount: 0, viewCount: '0' },
+      { id: 'frontend', name: '前端开发', icon: bookIcon, description: '前端技术、框架和最佳实践', postCount: 0, authorCount: 0, viewCount: '0' },
+      { id: 'backend', name: '后端开发', icon: settingsIcon, description: '后端架构、数据库和API设计', postCount: 0, authorCount: 0, viewCount: '0' },
+      { id: 'ai', name: '人工智能', icon: zapIcon, description: '机器学习、深度学习和AI应用', postCount: 0, authorCount: 0, viewCount: '0' },
+      { id: 'other', name: '其他', icon: categoryIcon, description: '职场、生活和其他话题', postCount: 0, authorCount: 0, viewCount: '0' }
     ])
     
     const currentCategory = computed(() => {
-      return allCategories.value.find(c => c.id === currentCategoryId.value) || allCategories.value[0]
+      return allCategories.value.find(c => c.id === currentCategoryId.value || c.slug === currentCategoryId.value) || allCategories.value[0]
     })
     
     const sortOptions = ref([
@@ -172,11 +183,102 @@ export default defineComponent({
       { id: 'recommend', name: '推荐' }
     ])
     
-    const categoryPosts = ref([
+    const categoryPosts = ref<any[]>([])
+    
+    // 加载所有分类
+    const loadCategories = async () => {
+      try {
+        const response = await blogService.categories.getAll()
+        if (response.success && response.data && response.data.length > 0) {
+          allCategories.value = response.data.map(c => ({
+            id: c.slug || c.id.toString(),
+            dbId: c.id,
+            name: c.name,
+            icon: iconMap[c.slug || ''] || categoryIcon,
+            description: c.description || `关于${c.name}的文章`,
+            postCount: c.postCount || 0,
+            authorCount: 0,
+            viewCount: formatCount(c.viewCount || 0)
+          }))
+        }
+      } catch (error) {
+        console.error('加载分类失败:', error)
+      }
+    }
+    
+    // 加载分类下的文章
+    const loadCategoryPosts = async () => {
+      loading.value = true
+      
+      try {
+        // 找到当前分类的数据库 ID
+        const category = allCategories.value.find(c => c.id === currentCategoryId.value || c.slug === currentCategoryId.value)
+        const categoryDbId = category?.dbId
+        
+        const sortParam = currentSort.value === 'latest' ? 'createdAt,desc' :
+                         currentSort.value === 'hot' ? 'viewCount,desc' : undefined
+        
+        const response = await blogService.categories.getPosts(
+          categoryDbId || currentCategoryId.value,
+          currentPage.value,
+          12,
+          sortParam
+        )
+        
+        if (response.success && response.data) {
+          categoryPosts.value = response.data.content.map(post => ({
+            id: post.id,
+            title: post.title,
+            excerpt: post.excerpt || '',
+            coverImage: post.coverImage || `https://picsum.photos/800/400?random=${post.id}`,
+            category: post.category?.name || currentCategory.value?.name || '未分类',
+            tags: post.tags?.map(t => t.name) || [],
+            author: {
+              name: post.author?.nickname || post.author?.username || '匿名',
+              avatar: post.author?.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${post.author?.id || 1}`
+            },
+            createdAt: formatDate(post.publishedAt || post.createdAt || ''),
+            views: post.viewCount || 0,
+            likes: post.likeCount || 0,
+            comments: post.commentCount || 0,
+            isLiked: post.liked || false,
+            isBookmarked: post.bookmarked || false
+          }))
+          
+          totalPages.value = response.data.totalPages || 1
+        }
+      } catch (error) {
+        console.error('加载分类文章失败:', error)
+        categoryPosts.value = getDefaultPosts()
+      } finally {
+        loading.value = false
+      }
+    }
+    
+    // 格式化日期
+    const formatDate = (dateStr: string) => {
+      if (!dateStr) return ''
+      const date = new Date(dateStr)
+      return `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}-${date.getDate().toString().padStart(2, '0')}`
+    }
+    
+    // 格式化数字
+    const formatCount = (count: number): string => {
+      if (count >= 10000) {
+        return (count / 10000).toFixed(1) + 'w'
+      }
+      if (count >= 1000) {
+        return (count / 1000).toFixed(1) + 'k'
+      }
+      return count.toString()
+    }
+    
+    // 默认文章数据
+    const getDefaultPosts = () => [
       {
         id: 1,
         title: 'Vue 3.0 Composition API 完全指南',
-        excerpt: '深入探讨 Vue 3.0 的 Composition API，包括 setup 函数、响应式系统等核心概念。',
+        excerpt: '深入探讨 Vue 3.0 的 Composition API。',
         coverImage: 'https://picsum.photos/800/400?random=10',
         category: '前端开发',
         tags: ['Vue.js', 'JavaScript'],
@@ -187,70 +289,72 @@ export default defineComponent({
         comments: 42,
         isLiked: false,
         isBookmarked: false
-      },
-      {
-        id: 2,
-        title: 'TypeScript 高级类型详解',
-        excerpt: '深入讲解 TypeScript 的高级类型特性，包括泛型约束、条件类型等。',
-        coverImage: 'https://picsum.photos/800/400?random=11',
-        category: '前端开发',
-        tags: ['TypeScript', '类型系统'],
-        author: { name: '代码大师', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=2' },
-        createdAt: '2025-12-14',
-        views: 1824,
-        likes: 142,
-        comments: 35,
-        isLiked: false,
-        isBookmarked: false
-      },
-      {
-        id: 3,
-        title: 'Node.js 微服务架构实践',
-        excerpt: '探索如何将传统的单体应用拆分为微服务架构。',
-        coverImage: 'https://picsum.photos/800/400?random=12',
-        category: '后端开发',
-        tags: ['Node.js', '微服务'],
-        author: { name: '架构师老王', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=3' },
-        createdAt: '2025-12-13',
-        views: 1567,
-        likes: 98,
-        comments: 28,
-        isLiked: false,
-        isBookmarked: false
-      },
-      {
-        id: 4,
-        title: 'React Hooks 最佳实践',
-        excerpt: '学习如何设计和实现高质量的自定义 Hook。',
-        coverImage: 'https://picsum.photos/800/400?random=13',
-        category: '前端开发',
-        tags: ['React', 'Hooks'],
-        author: { name: 'React爱好者', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=4' },
-        createdAt: '2025-12-12',
-        views: 1345,
-        likes: 112,
-        comments: 22,
-        isLiked: false,
-        isBookmarked: false
       }
-    ])
+    ]
     
-    const handleLike = (postId: number) => {
+    const handleLike = async (postId: number) => {
       const post = categoryPosts.value.find(p => p.id === postId)
       if (post) {
-        post.isLiked = !post.isLiked
-        post.likes += post.isLiked ? 1 : -1
+        try {
+          if (post.isLiked) {
+            await blogService.posts.unlike(postId)
+            post.isLiked = false
+            post.likes--
+          } else {
+            await blogService.posts.like(postId)
+            post.isLiked = true
+            post.likes++
+          }
+        } catch (error) {
+          console.error('点赞失败:', error)
+          post.isLiked = !post.isLiked
+          post.likes += post.isLiked ? 1 : -1
+        }
       }
     }
     
-    const handleBookmark = (postId: number) => {
+    const handleBookmark = async (postId: number) => {
       const post = categoryPosts.value.find(p => p.id === postId)
       if (post) {
-        post.isBookmarked = !post.isBookmarked
+        try {
+          if (post.isBookmarked) {
+            await blogService.posts.unbookmark(postId)
+            post.isBookmarked = false
+          } else {
+            await blogService.posts.bookmark(postId)
+            post.isBookmarked = true
+          }
+        } catch (error) {
+          console.error('收藏失败:', error)
+          post.isBookmarked = !post.isBookmarked
+        }
       }
     }
+    
+    // 监听分类变化
+    watch(currentCategoryId, () => {
+      currentPage.value = 1
+      loadCategoryPosts()
+    })
+    
+    // 监听排序变化
+    watch(currentSort, () => {
+      currentPage.value = 1
+      loadCategoryPosts()
+    })
+    
+    // 监听页码变化
+    watch(currentPage, () => {
+      loadCategoryPosts()
+    })
+    
+    onMounted(async () => {
+      await loadCategories()
+      await loadCategoryPosts()
+    })
     
     return {
+      loading,
       currentCategoryId,
       currentCategory,
       allCategories,
