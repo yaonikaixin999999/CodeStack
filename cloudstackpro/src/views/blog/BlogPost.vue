@@ -209,6 +209,8 @@ import BlogFooter from '@/components/blog/BlogFooter.vue'
 import { blogService, type Post, type Comment } from '@/services/blogService'
 import plusIcon from '@/assets/blog/icons/plus.svg'
 import checkIcon from '@/assets/blog/icons/check.svg'
+import { marked } from 'marked'
+import DOMPurify from 'dompurify'
 
 export default defineComponent({
   name: 'BlogPost',
@@ -294,7 +296,7 @@ export default defineComponent({
             comments: data.commentCount || 0,
             isLiked: data.liked || false,
             isBookmarked: data.bookmarked || false,
-            content: data.contentHtml || data.content || ''
+            content: parseMarkdown(data.contentHtml || data.content || '')
           }
           
           // 生成目录
@@ -312,6 +314,23 @@ export default defineComponent({
       }
     }
     
+    // 解析Markdown内容
+    const parseMarkdown = (content: string): string => {
+      if (!content) return ''
+      // 检查内容是否已经是HTML（包含HTML标签）
+      if (content.includes('<p>') || content.includes('<h1>') || content.includes('<div>')) {
+        return DOMPurify.sanitize(content)
+      }
+      // 配置marked选项
+      marked.setOptions({
+        breaks: true,
+        gfm: true
+      })
+      // 将Markdown转换为HTML并清理
+      const html = marked(content) as string
+      return DOMPurify.sanitize(html)
+    }
+
     // 生成目录
     const generateToc = (content: string) => {
       const parser = new DOMParser()

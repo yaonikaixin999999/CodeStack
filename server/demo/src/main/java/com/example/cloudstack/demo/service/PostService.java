@@ -186,16 +186,48 @@ public class PostService {
     }
 
     /**
-     * 获取文章列表
+     * 获取文章列表 (支持多种筛选条件)
      */
-    public PageResponse<PostListDTO> getPosts(int page, int size, Long currentUserId) {
-        Page<Post> posts = postRepository.findPublishedPosts(PageRequest.of(page, size));
+    public PageResponse<PostListDTO> getPosts(int page, int size, Long categoryId, Long tagId,
+            Long authorId, String keyword, String sort, Long currentUserId) {
+        Page<Post> posts;
+        PageRequest pageRequest = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
+
+        // 根据排序参数调整
+        if (sort != null && !sort.isEmpty()) {
+            String[] sortParts = sort.split(",");
+            String sortField = sortParts[0];
+            Sort.Direction direction = sortParts.length > 1 && sortParts[1].equalsIgnoreCase("asc")
+                    ? Sort.Direction.ASC
+                    : Sort.Direction.DESC;
+            pageRequest = PageRequest.of(page, size, Sort.by(direction, sortField));
+        }
+
+        // 根据筛选条件查询
+        if (categoryId != null) {
+            posts = postRepository.findByCategoryId(categoryId, pageRequest);
+        } else if (tagId != null) {
+            posts = postRepository.findByTagId(tagId, pageRequest);
+        } else if (authorId != null) {
+            posts = postRepository.findByUserIdAndDeletedAtIsNull(authorId, pageRequest);
+        } else if (keyword != null && !keyword.isEmpty()) {
+            posts = postRepository.searchPosts(keyword, pageRequest);
+        } else {
+            posts = postRepository.findPublishedPosts(pageRequest);
+        }
 
         List<PostListDTO> postDTOs = posts.getContent().stream()
                 .map(this::convertToListDTO)
                 .collect(Collectors.toList());
 
         return PageResponse.of(postDTOs, page, size, posts.getTotalElements());
+    }
+
+    /**
+     * 获取文章列表 (简单版本，保持向后兼容)
+     */
+    public PageResponse<PostListDTO> getPosts(int page, int size, Long currentUserId) {
+        return getPosts(page, size, null, null, null, null, null, currentUserId);
     }
 
     /**

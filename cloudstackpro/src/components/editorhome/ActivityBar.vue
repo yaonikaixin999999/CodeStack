@@ -30,11 +30,9 @@
       </div>
       <div
         :class="['activity-icon', { active: activeTab === 'extensions' }]"
-        @click="handleClick('extensions')"
+        @click="goToBlog"
       >
-        <router-link to="/blog">
-          <img :src="extensionsIcon" alt="Extensions" />
-        </router-link>
+        <img :src="extensionsIcon" alt="Extensions" />
       </div>
       
       <div class="spacer"></div>
@@ -87,6 +85,7 @@
   
   <script setup lang="ts">
   import { ref, onMounted, onUnmounted } from 'vue'
+  import { useRouter } from 'vue-router'
   
   // 导入图标
   import explorerIcon from '@/images/icons8-文件夹-40.png'
@@ -95,6 +94,9 @@
   import debugIcon from '@/images/icons8-播放-40.png'
   import extensionsIcon from '@/images/icons8-用户组-40.png'
   import settingsIcon from '@/images/icons8-设置-40.png'
+  
+  // Router
+  const router = useRouter()
   
   // Props 定义
   interface Props {
@@ -132,6 +134,11 @@
     props.onTabChange(tabName)
   }
   
+  // 跳转到博客系统
+  const goToBlog = () => {
+    router.push('/blog')
+  }
+
   const toggleSettingsMenu = () => {
     showSettingsMenu.value = !showSettingsMenu.value
   }

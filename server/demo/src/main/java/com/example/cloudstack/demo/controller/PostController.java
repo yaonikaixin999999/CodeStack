@@ -27,15 +27,21 @@ public class PostController {
 
     /**
      * 获取文章列表
-     * GET /api/posts?page=0&size=10
+     * GET /api/posts?page=0&size=10&categoryId=1
      */
     @GetMapping
     public ResponseEntity<ApiResponse<PageResponse<PostListDTO>>> getPosts(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required = false) Long categoryId,
+            @RequestParam(required = false) Long tagId,
+            @RequestParam(required = false) Long authorId,
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) String sort,
             @RequestAttribute(value = "userId", required = false) Long currentUserId) {
         try {
-            PageResponse<PostListDTO> posts = postService.getPosts(page, size, currentUserId);
+            PageResponse<PostListDTO> posts = postService.getPosts(page, size, categoryId, tagId, authorId, keyword,
+                    sort, currentUserId);
             return ResponseEntity.ok(ApiResponse.success(posts));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));

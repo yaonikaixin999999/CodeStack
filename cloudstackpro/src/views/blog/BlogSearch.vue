@@ -175,7 +175,7 @@ export default defineComponent({
     const activeFilter = ref('all')
     const sortBy = ref('relevance')
     const loading = ref(false)
-    const currentPage = ref(1)
+    const currentPage = ref(0)
     const pageSize = ref(10)
     const hasMore = ref(true)
     
@@ -242,17 +242,14 @@ export default defineComponent({
       
       hasSearched.value = true
       loading.value = true
-      currentPage.value = 1
+      currentPage.value = 0
       const startTime = Date.now()
       
       try {
-        // 使用文章列表 API 进行搜索（后端支持关键词搜索）
-        const response = await blogService.posts.getList({
+        // 使用文章搜索 API（后端分页从0开始）
+        const response = await blogService.posts.search(searchQuery.value, {
           page: currentPage.value,
-          size: pageSize.value,
-          keyword: searchQuery.value,
-          sort: sortBy.value === 'latest' ? 'createdAt,desc' : 
-                sortBy.value === 'popular' ? 'viewCount,desc' : undefined
+          size: pageSize.value
         })
         
         if (response.success && response.data) {
@@ -290,7 +287,7 @@ export default defineComponent({
       searchQuery.value = tag
       hasSearched.value = true
       loading.value = true
-      currentPage.value = 1
+      currentPage.value = 0
       const startTime = Date.now()
       
       try {
@@ -329,10 +326,9 @@ export default defineComponent({
       loading.value = true
       
       try {
-        const response = await blogService.posts.getList({
+        const response = await blogService.posts.search(searchQuery.value, {
           page: currentPage.value,
-          size: pageSize.value,
-          keyword: searchQuery.value
+          size: pageSize.value
         })
         
         if (response.success && response.data) {

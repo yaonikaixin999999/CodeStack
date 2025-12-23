@@ -70,9 +70,9 @@
                 <span>设置</span>
               </router-link>
               <div class="dropdown-divider"></div>
-              <button class="dropdown-item logout-btn" @click="handleLogout">
-                <img src="@/assets/blog/icons/close.svg" alt="退出" class="dropdown-icon" />
-                <span>退出Blog</span>
+              <button class="dropdown-item logout-btn" @click="goBackToEditor">
+                <img src="@/assets/blog/icons/home.svg" alt="返回" class="dropdown-icon" />
+                <span>返回首页</span>
               </button>
             </div>
           </div>
@@ -163,10 +163,9 @@ export default defineComponent({
       showMobileMenu.value = !showMobileMenu.value
     }
     
-    // 退出登录
-    const handleLogout = () => {
-      blogService.auth.logout()
-      router.push('/login')
+    // 返回编辑器首页
+    const goBackToEditor = () => {
+      router.push('/editor')
     }
     
     onMounted(() => {
@@ -186,7 +185,7 @@ export default defineComponent({
       handleSearch,
       toggleUserMenu,
       toggleMobileMenu,
-      handleLogout
+      goBackToEditor
     }
   }
 })

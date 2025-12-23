@@ -495,11 +495,8 @@ export default defineComponent({
       publishing.value = true
       
       try {
-        // 如果封面图是 base64 数据，暂时不传（太长会导致数据库存储失败）
-        // 建议使用图片上传接口获取 URL
-        const coverImageValue = postData.coverImage && !postData.coverImage.startsWith('data:') 
-          ? postData.coverImage 
-          : undefined
+        // 封面图支持 base64 格式（后端 cover_image 字段为 LONGTEXT 类型）
+        const coverImageValue = postData.coverImage || undefined
         
         const postPayload = {
           title: postData.title,

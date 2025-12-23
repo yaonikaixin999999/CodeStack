@@ -60,6 +60,20 @@ const routes: RouteRecordRaw[] = [
     component: BlogCategory,
     meta: { requiresAuth: true, isBlog: true }
   },
+  // 支持不带 /blog 前缀的分类路由（从侧边栏跳转）
+  {
+    path: '/category/:name',
+    name: 'CategoryRedirect',
+    component: BlogCategory,
+    meta: { requiresAuth: true, isBlog: true }
+  },
+  // 支持 /archive 路由
+  {
+    path: '/archive/:month',
+    name: 'BlogArchive',
+    component: BlogSearch,
+    meta: { requiresAuth: true, isBlog: true }
+  },
   {
     path: '/blog/search',
     name: 'BlogSearch',
@@ -106,15 +120,15 @@ router.beforeEach((to, from, next) => {
   }
 
   // 已登录用户访问登录页，重定向
-  if (to.path === '/login') {
-    if (blogLoggedIn) {
-      next('/blog')
-      return
-    } else if (currentUser) {
-      next('/editor')
-      return
-    }
-  }
+  // if (to.path === '/login') {
+  //   if (blogLoggedIn) {
+  //     next('/blog')
+  //     return
+  //   } else if (currentUser) {
+  //     next('/editor')
+  //     return
+  //   }
+  // }
 
   next()
 })

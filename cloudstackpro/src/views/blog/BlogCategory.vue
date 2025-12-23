@@ -212,15 +212,27 @@ export default defineComponent({
       
       try {
         // 找到当前分类的数据库 ID
-        const category = allCategories.value.find(c => c.id === currentCategoryId.value || c.slug === currentCategoryId.value)
-        const categoryDbId = category?.dbId
+        const category = allCategories.value.find(c => 
+          c.id === currentCategoryId.value || 
+          c.slug === currentCategoryId.value ||
+          c.id.toString() === currentCategoryId.value
+        )
+        const categoryDbId = category?.dbId || category?.id
+        
+        if (!categoryDbId) {
+          console.warn('未找到分类:', currentCategoryId.value)
+          categoryPosts.value = getDefaultPosts()
+          loading.value = false
+          return
+        }
         
         const sortParam = currentSort.value === 'latest' ? 'createdAt,desc' :
                          currentSort.value === 'hot' ? 'viewCount,desc' : undefined
         
+        // 注意：后端分页从0开始，前端显示从1开始
         const response = await blogService.categories.getPosts(
-          categoryDbId || currentCategoryId.value,
-          currentPage.value,
+          categoryDbId,
+          currentPage.value - 1,
           12,
           sortParam
         )

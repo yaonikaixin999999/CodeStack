@@ -435,11 +435,11 @@ export default defineComponent({
         const userId = userInfo.value.id || currentUser.value?.id
         if (!userId) return
         
-        // 使用文章列表 API 按作者筛选
+        // 使用文章列表 API 按作者筛选（后端分页从0开始）
         const response = await blogService.posts.getList({
           authorId: userId,
-          page: 1,
-          size: 10
+          page: 0,
+          size: 100
         })
         
         if (response.success && response.data) {
