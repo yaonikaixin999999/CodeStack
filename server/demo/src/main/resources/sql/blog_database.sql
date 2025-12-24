@@ -28,6 +28,7 @@ CREATE TABLE IF NOT EXISTS `users` (
     `level` TINYINT UNSIGNED DEFAULT 1 COMMENT '用户等级',
     `status` TINYINT DEFAULT 1 COMMENT '状态: 0-禁用, 1-正常',
     `role` VARCHAR(20) DEFAULT 'user' COMMENT '角色: user-普通用户, admin-管理员',
+    `is_admin` TINYINT(1) DEFAULT 0 COMMENT '是否管理员: 1-是, 0-否',
     `last_login_at` DATETIME DEFAULT NULL COMMENT '最后登录时间',
     `last_login_ip` VARCHAR(45) DEFAULT NULL COMMENT '最后登录IP',
     `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
@@ -388,6 +389,16 @@ CREATE TABLE IF NOT EXISTS `operation_logs` (
 -- ============================================
 -- 初始化数据
 -- ============================================
+
+-- 插入内置管理员账号（仅登录，不参与注册流程）
+INSERT INTO `users` (
+    `username`, `email`, `password`, `nickname`, `role`, `is_admin`, `status`
+) VALUES (
+    'admin', 'admin@example.com', 'admin', 'Administrator', 'admin', 1, 1
+)
+ON DUPLICATE KEY UPDATE
+    `role` = VALUES(`role`),
+    `is_admin` = VALUES(`is_admin`);
 
 -- 插入默认分类
 INSERT INTO `categories` (`name`, `slug`, `description`, `icon`, `sort_order`) VALUES

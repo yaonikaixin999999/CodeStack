@@ -1,11 +1,13 @@
 <template>
   <article class="post-card" :class="{ 'featured': featured }">
-    <div class="card-image" v-if="post.coverImage">
-      <img :src="post.coverImage" :alt="post.title" />
-      <div class="image-overlay">
-        <span class="category-badge">{{ post.category }}</span>
+    <router-link :to="`/blog/post/${post.id}`" class="card-image-wrapper" v-if="post.coverImage">
+      <div class="card-image">
+        <img :src="post.coverImage" :alt="post.title" />
+        <div class="image-overlay">
+          <span class="category-badge">{{ post.category }}</span>
+        </div>
       </div>
-    </div>
+    </router-link>
     
     <div class="card-content">
       <div class="card-meta">
