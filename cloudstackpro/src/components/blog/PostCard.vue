@@ -19,7 +19,7 @@
         </span>
       </div>
       
-      <router-link :to="`/blog/post/${post.id}`" class="card-title">
+      <router-link :to="`${postRouteBase}/${post.id}`" class="card-title">
         {{ post.title }}
       </router-link>
       
@@ -97,6 +97,10 @@ export default defineComponent({
     featured: {
       type: Boolean,
       default: false
+    },
+    postRouteBase: {
+      type: String,
+      default: '/blog/post'
     }
   },
   emits: ['like', 'bookmark', 'share'],

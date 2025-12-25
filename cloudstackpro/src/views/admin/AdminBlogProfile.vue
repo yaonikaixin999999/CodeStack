@@ -37,12 +37,12 @@
               </span>
             </div>
           </div>
-          <div class="user-actions" v-if="isViewingUserById">
+          <div class="user-actions" v-if="!isOwner">
             <button class="action-btn primary" :class="{ followed: isFollowed }" @click="toggleFollow">
               <img :src="isFollowed ? checkIcon : plusIcon" alt="" class="btn-icon" />
               {{ isFollowed ? '已关注' : '关注' }}
             </button>
-            <button class="action-btn" :disabled="isOwner">
+            <button class="action-btn">
               <img src="@/assets/blog/icons/comment.svg" alt="私信" class="btn-icon" />
               私信
             </button>
@@ -258,7 +258,6 @@ export default defineComponent({
     const isFollowed = ref(false)
     const activeTab = ref('posts')
     const currentUser = ref(blogService.auth.getLocalUser())
-    const isViewingUserById = ref(!!route.params.id)
     
     const makeDefaultUserInfo = (seed: string, id?: number) => ({
       id: id || 0,
@@ -555,7 +554,6 @@ export default defineComponent({
     watch(
       () => route.params.id,
       async () => {
-        isViewingUserById.value = !!route.params.id
         userInfo.value = makeDefaultUserInfo(getProfileSeed())
         activeTab.value = 'posts'
         userPosts.value = []
@@ -601,8 +599,7 @@ export default defineComponent({
       toggleFollow,
       plusIcon,
       checkIcon,
-      goBack,
-      isViewingUserById
+      goBack
     }
   }
 })
@@ -653,11 +650,6 @@ export default defineComponent({
   width: 16px;
   height: 16px;
   opacity: 0.6;
-}
-
-.user-actions .action-btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
 }
 
 .profile-header {

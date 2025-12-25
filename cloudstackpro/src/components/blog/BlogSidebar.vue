@@ -1,7 +1,7 @@
 <template>
   <aside class="blog-sidebar">
     <!-- 作者信息卡片 -->
-    <div class="sidebar-card author-card">
+    <div v-if="showAuthorCard" class="sidebar-card author-card">
       <div class="author-header">
         <img src="@/assets/blog/images/user.jpg" alt="头像" class="author-avatar" />
         <div class="author-info">
@@ -53,7 +53,7 @@
         <li v-for="(post, index) in hotPosts" :key="post.id" class="hot-post-item">
           <span class="post-rank" :class="{ 'top': index < 3 }">{{ index + 1 }}</span>
           <div class="post-info">
-            <router-link :to="`/blog/post/${post.id}`" class="post-title">{{ post.title }}</router-link>
+            <router-link :to="`${postRouteBase}/${post.id}`" class="post-title">{{ post.title }}</router-link>
             <span class="post-views">
               <img src="@/assets/blog/icons/eye.svg" alt="阅读" class="view-icon" />
               {{ post.views }}
@@ -64,14 +64,14 @@
     </div>
     
     <!-- 文章归档 -->
-    <div class="sidebar-card">
+    <div v-if="showArchive" class="sidebar-card">
       <div class="card-header">
         <img src="@/assets/blog/icons/book.svg" alt="文章归档" class="header-icon" />
         <h3 class="card-title">文章归档</h3>
       </div>
       <ul class="archive-list">
         <li v-for="archive in archives" :key="archive.month" class="archive-item">
-          <router-link :to="`/archive/${archive.month}`" class="archive-link">
+          <router-link :to="archiveTo(archive.month)" class="archive-link">
             <span class="archive-month">{{ archive.label }}</span>
             <span class="archive-count">{{ archive.count }}篇</span>
           </router-link>
@@ -100,7 +100,29 @@ import { useRouter } from 'vue-router'
 
 export default defineComponent({
   name: 'BlogSidebar',
-  setup() {
+  props: {
+    showAuthorCard: {
+      type: Boolean,
+      default: true
+    },
+    showArchive: {
+      type: Boolean,
+      default: true
+    },
+    postRouteBase: {
+      type: String,
+      default: '/blog/post'
+    },
+    tagRoutePath: {
+      type: String,
+      default: '/blog/search'
+    },
+    tagQueryKey: {
+      type: String,
+      default: 'tag'
+    }
+  },
+  setup(props) {
     const router = useRouter()
     
     const hotTags = ref([
@@ -138,7 +160,11 @@ export default defineComponent({
     ])
     
     const handleTagClick = (tagName: string) => {
-      router.push({ path: '/blog/search', query: { tag: tagName } })
+      router.push({ path: props.tagRoutePath, query: { [props.tagQueryKey]: tagName } })
+    }
+
+    const archiveTo = (month: string) => {
+      return `/archive/${month}`
     }
     
     return {
@@ -146,7 +172,8 @@ export default defineComponent({
       hotPosts,
       archives,
       friendLinks,
-      handleTagClick
+      handleTagClick,
+      archiveTo
     }
   }
 })
