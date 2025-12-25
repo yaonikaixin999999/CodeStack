@@ -1,15 +1,19 @@
 <template>
   <div class="admin-blog-profile">
-    <AdminHeader />
-    
     <main class="main-content">
+      <div class="profile-topbar">
+        <button class="back-btn" @click="goBack">
+          <img src="@/assets/blog/icons/chevron-left.svg" alt="返回" class="back-icon" />
+          返回
+        </button>
+      </div>
       <header class="profile-header">
         <div class="header-bg">
           <div class="bg-pattern"></div>
         </div>
         <div class="header-content">
           <div class="user-avatar-wrapper">
-            <img src="@/assets/blog/images/user.jpg" :alt="userInfo.name" class="user-avatar" />
+            <img :src="userInfo.avatar" :alt="userInfo.name" class="user-avatar" />
             <span class="user-level">Lv.{{ userInfo.level }}</span>
           </div>
           <div class="user-info">
@@ -237,8 +241,7 @@
 
 <script lang="ts">
 import { defineComponent, ref, onMounted, watch } from 'vue'
-import { useRoute } from 'vue-router'
-import AdminHeader from '@/components/admin/AdminHeader.vue'
+import { useRoute, useRouter } from 'vue-router'
 import { blogService } from '@/services/blogService'
 
 import bookIcon from '@/assets/blog/icons/book.svg'
@@ -256,28 +259,26 @@ import iconWriter from '@/assets/blog/icons/icons8-作者-100.png'
 
 export default defineComponent({
   name: 'AdminBlogProfile',
-  components: {
-    AdminHeader
-  },
   setup() {
     const route = useRoute()
+    const router = useRouter()
     
     const loading = ref(true)
-    const isOwner = ref(true)
+    const isOwner = ref(false)
     const isFollowed = ref(false)
     const activeTab = ref('posts')
     const currentUser = ref(blogService.auth.getLocalUser())
     
-    const userInfo = ref({
-      id: 0,
-      avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=profile',
-      name: '技术小白',
-      level: 5,
-      badges: ['优秀作者', '技术达人'],
-      bio: '全栈开发工程师，热爱技术分享。',
-      profession: '全栈工程师',
-      location: '北京',
-      joinDate: '2023-01',
+    const makeDefaultUserInfo = (seed: string, id?: number) => ({
+      id: id || 0,
+      avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${seed}`,
+      name: id ? `用户 #${id}` : '用户',
+      level: 1,
+      badges: ['新手作者'],
+      bio: '这个人很懒，什么都没有留下。',
+      profession: '开发者',
+      location: '未知',
+      joinDate: '未知',
       stats: {
         posts: 0,
         followers: '0',
@@ -286,6 +287,13 @@ export default defineComponent({
         views: '0'
       }
     })
+
+    const getProfileSeed = () => {
+      const routeId = route.params.id ? String(route.params.id) : ''
+      return routeId || String(currentUser.value?.id || 'profile')
+    }
+
+    const userInfo = ref(makeDefaultUserInfo(getProfileSeed()))
     
     const contentTabs = ref([
       { id: 'posts', name: '文章', count: 0, icon: bookIcon },
@@ -346,8 +354,12 @@ export default defineComponent({
         }
       } catch (error) {
         console.error('加载用户信息失败:', error)
-        if (currentUser.value && !route.params.id) {
+        if (userId) {
+          userInfo.value = makeDefaultUserInfo(String(userId), Number(userId))
+        } else if (currentUser.value && !route.params.id) {
           updateUserInfo(currentUser.value)
+        } else {
+          userInfo.value = makeDefaultUserInfo(getProfileSeed())
         }
       } finally {
         loading.value = false
@@ -355,6 +367,7 @@ export default defineComponent({
     }
     
     const updateUserInfo = (user: any) => {
+      const likeCount = user.likeCount ?? user.likeReceivedCount ?? 0
       userInfo.value = {
         id: user.id,
         avatar: user.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.id}`,
@@ -369,7 +382,7 @@ export default defineComponent({
           posts: user.postCount || 0,
           followers: formatCount(user.followerCount || 0),
           following: user.followingCount || 0,
-          likes: formatCount(user.likeCount || 0),
+          likes: formatCount(likeCount),
           views: formatCount(user.viewCount || 0)
         }
       }
@@ -384,7 +397,8 @@ export default defineComponent({
       const badges: string[] = []
       if ((user.postCount || 0) >= 10) badges.push('优秀作者')
       if ((user.followerCount || 0) >= 100) badges.push('人气作者')
-      if ((user.likeCount || 0) >= 500) badges.push('技术达人')
+      const likeCount = user.likeCount ?? user.likeReceivedCount ?? 0
+      if (likeCount >= 500) badges.push('技术达人')
       return badges.length > 0 ? badges : ['新手作者']
     }
     
@@ -546,11 +560,33 @@ export default defineComponent({
           break
       }
     })
+
+    watch(
+      () => route.params.id,
+      async () => {
+        userInfo.value = makeDefaultUserInfo(getProfileSeed())
+        activeTab.value = 'posts'
+        userPosts.value = []
+        bookmarks.value = []
+        following.value = []
+        followers.value = []
+        await loadUserProfile()
+        await loadUserPosts()
+      }
+    )
     
     onMounted(async () => {
       await loadUserProfile()
       await loadUserPosts()
     })
+
+    const goBack = () => {
+      if (window.history.length > 1) {
+        router.back()
+        return
+      }
+      router.push('/admin/users')
+    }
     
     return {
       loading,
@@ -568,7 +604,8 @@ export default defineComponent({
       tags,
       toggleFollow,
       plusIcon,
-      checkIcon
+      checkIcon,
+      goBack
     }
   }
 })
@@ -581,13 +618,44 @@ export default defineComponent({
 }
 
 .main-content {
-  padding-top: 64px;
+  padding-top: 0;
 }
 
 .content-container {
   max-width: 1200px;
   margin: 0 auto;
   padding: 0 24px;
+}
+
+.profile-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  padding: 12px 24px;
+  background: rgba(255, 255, 255, 0.9);
+  border-bottom: 1px solid rgba(226, 232, 240, 0.7);
+  backdrop-filter: blur(10px);
+}
+
+.back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: #ffffff;
+  border: 1px solid rgba(226, 232, 240, 0.8);
+  box-shadow: var(--shadow-sm);
+  color: var(--text-dark);
+  cursor: pointer;
+}
+
+.back-icon {
+  width: 16px;
+  height: 16px;
+  opacity: 0.6;
 }
 
 .profile-header {

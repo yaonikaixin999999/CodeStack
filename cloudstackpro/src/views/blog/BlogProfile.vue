@@ -1,8 +1,12 @@
 <template>
   <div class="blog-profile">
-    <BlogHeader />
-    
     <main class="main-content">
+      <div class="profile-topbar">
+        <button class="back-btn" @click="goBack">
+          <img src="@/assets/blog/icons/chevron-left.svg" alt="返回" class="back-icon" />
+          返回
+        </button>
+      </div>
       <!-- 用户信息卡片 -->
       <header class="profile-header">
         <div class="header-bg">
@@ -10,7 +14,7 @@
         </div>
         <div class="header-content">
           <div class="user-avatar-wrapper">
-            <img src="@/assets/blog/images/user.jpg" :alt="userInfo.name" class="user-avatar" />
+            <img :src="userInfo.avatar" :alt="userInfo.name" class="user-avatar" />
             <span class="user-level">Lv.{{ userInfo.level }}</span>
           </div>
           <div class="user-info">
@@ -251,8 +255,7 @@
 
 <script lang="ts">
 import { defineComponent, ref, computed, onMounted, watch } from 'vue'
-import { useRoute } from 'vue-router'
-import BlogHeader from '@/components/blog/BlogHeader.vue'
+import { useRoute, useRouter } from 'vue-router'
 import BlogFooter from '@/components/blog/BlogFooter.vue'
 import { blogService } from '@/services/blogService'
 
@@ -272,11 +275,11 @@ import iconWriter from '@/assets/blog/icons/icons8-作者-100.png'
 export default defineComponent({
   name: 'BlogProfile',
   components: {
-    BlogHeader,
     BlogFooter
   },
   setup() {
     const route = useRoute()
+    const router = useRouter()
     
     const loading = ref(true)
     const isOwner = ref(true)
@@ -339,7 +342,9 @@ export default defineComponent({
     
     // 加载用户信息
     const loadUserProfile = async () => {
-      const userId = route.params.id as string
+      const rawQueryId = route.query.id
+      const queryId = Array.isArray(rawQueryId) ? rawQueryId[0] : rawQueryId
+      const userId = (route.params.id as string) || (queryId as string) || ''
       loading.value = true
       
       try {
@@ -373,7 +378,15 @@ export default defineComponent({
         loading.value = false
       }
     }
-    
+
+    const goBack = () => {
+      if (window.history.length > 1) {
+        router.back()
+        return
+      }
+      router.push('/blog')
+    }
+
     // 更新用户信息
     const updateUserInfo = (user: any) => {
       userInfo.value = {
@@ -601,7 +614,8 @@ export default defineComponent({
       tags,
       toggleFollow,
       plusIcon,
-      checkIcon
+      checkIcon,
+      goBack
     }
   }
 })
@@ -614,7 +628,38 @@ export default defineComponent({
 }
 
 .main-content {
-  padding-top: 64px;
+  padding-top: 0;
+}
+
+.profile-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  padding: 12px 24px;
+  background: rgba(255, 255, 255, 0.9);
+  border-bottom: 1px solid rgba(226, 232, 240, 0.7);
+  backdrop-filter: blur(10px);
+}
+
+.back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: #ffffff;
+  border: 1px solid rgba(226, 232, 240, 0.8);
+  box-shadow: var(--shadow-sm);
+  color: var(--text-dark);
+  cursor: pointer;
+}
+
+.back-icon {
+  width: 16px;
+  height: 16px;
+  opacity: 0.6;
 }
 
 .content-container {

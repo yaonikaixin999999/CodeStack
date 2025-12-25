@@ -46,7 +46,7 @@
                 <tr v-for="user in users" :key="user.id">
                   <td class="title-cell">
                     <span class="dot"></span>
-                    <span class="clickable" @click="goChat(user)">{{ user.username }}</span>
+                    <span class="clickable" @click="goProfile(user)">{{ user.username }}</span>
                   </td>
                   <td>{{ user.email }}</td>
                   <td>{{ user.role }}</td>
@@ -88,8 +88,9 @@ const heroKeyword = ref('')
 const users = ref<AdminUser[]>([])
 const errorMessage = ref('')
 
-const goChat = (user?: AdminUser) => {
-  router.push('/chat')
+const goProfile = (user?: AdminUser) => {
+  if (!user?.id) return
+  router.push(`/admin/blog/profile/${user.id}`)
 }
 
 const goSearchHero = () => {
