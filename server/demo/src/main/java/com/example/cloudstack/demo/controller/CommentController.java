@@ -85,9 +85,10 @@ public class CommentController {
     @DeleteMapping("/{id}")
     public ResponseEntity<ApiResponse<Void>> deleteComment(
             @PathVariable Long id,
-            @RequestAttribute("userId") Long userId) {
+            @RequestAttribute("userId") Long userId,
+            @RequestAttribute(value = "isAdmin", required = false) Boolean isAdmin) {
         try {
-            commentService.deleteComment(id, userId);
+            commentService.deleteComment(id, userId, isAdmin != null && isAdmin);
             return ResponseEntity.ok(ApiResponse.successMsg("删除成功"));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));

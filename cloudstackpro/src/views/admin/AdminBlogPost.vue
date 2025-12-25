@@ -167,6 +167,10 @@
                         <img src="@/assets/blog/icons/comment.svg" alt="回复" />
                         <span>回复</span>
                       </button>
+                      <button class="comment-action delete" @click="deleteComment(comment.id)">
+                        <img src="@/assets/blog/icons/close.svg" alt="删除" />
+                        <span>删除</span>
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -502,6 +506,18 @@ export default defineComponent({
     const replyComment = (commentId: number) => {
       console.log('回复评论:', commentId)
     }
+
+    const deleteComment = async (commentId: number) => {
+      const ok = window.confirm('确定要删除这条评论吗？删除后将无法恢复。')
+      if (!ok) return
+      try {
+        await blogService.comments.delete(commentId)
+        comments.value = comments.value.filter(c => c.id !== commentId)
+        if (post.value.comments > 0) post.value.comments--
+      } catch (error: any) {
+        alert(error?.message || '删除失败')
+      }
+    }
     
     onMounted(() => {
       loadPost()
@@ -524,7 +540,8 @@ export default defineComponent({
       sharePost,
       submitComment,
       likeComment,
-      replyComment
+      replyComment,
+      deleteComment
     }
   }
 })

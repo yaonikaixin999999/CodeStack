@@ -27,7 +27,7 @@ public class CommentDTO {
     private LocalDateTime createdAt;
 
     // 评论者信息
-    private UserDTO user;
+    private UserDTO author;
 
     // 回复目标用户(如果是回复)
     private UserDTO replyToUser;

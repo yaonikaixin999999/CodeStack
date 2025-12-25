@@ -99,12 +99,12 @@ public class CommentService {
      * 删除评论
      */
     @Transactional
-    public void deleteComment(Long commentId, Long userId) {
+    public void deleteComment(Long commentId, Long userId, boolean isAdmin) {
         Comment comment = commentRepository.findById(commentId)
                 .orElseThrow(() -> new RuntimeException("评论不存在"));
 
         // 检查权限
-        if (!comment.getUserId().equals(userId)) {
+        if (!isAdmin && !comment.getUserId().equals(userId)) {
             throw new RuntimeException("无权删除此评论");
         }
 
@@ -159,7 +159,7 @@ public class CommentService {
 
         // 评论者信息
         userRepository.findById(comment.getUserId()).ifPresent(user -> {
-            dto.setUser(CommentDTO.UserDTO.builder()
+            dto.setAuthor(CommentDTO.UserDTO.builder()
                     .id(user.getId())
                     .username(user.getUsername())
                     .nickname(user.getNickname())
