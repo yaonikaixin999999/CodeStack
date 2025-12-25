@@ -1,6 +1,6 @@
 import axios from 'axios'
 
-const API_BASE_URL = 'http://192.168.22.16:8080/api/auth'
+const API_BASE_URL = 'http://192.168.31.1:8080/api/auth'
 
 // 定义接口类型
 interface LoginForm {

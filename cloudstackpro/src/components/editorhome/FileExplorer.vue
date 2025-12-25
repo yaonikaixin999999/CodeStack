@@ -161,7 +161,7 @@
   import newFolderIcon from '@/images/icons8-新增文件夹-80.png';
   
   // API 基础 URL
-  const API_BASE_URL = 'http://192.168.22.16:3001/api';
+  const API_BASE_URL ='http://localhost:3001/api';
   
   // 文件类型接口
   interface FileNode {

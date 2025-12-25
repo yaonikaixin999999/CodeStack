@@ -81,7 +81,7 @@ server.listen(PORT, '0.0.0.0', () => {
     console.log(`Server encoding: UTF-8`);
     console.log(`Server accessible at:`);
     console.log(`  Local:   http://localhost:${PORT}/api/health`);
-    console.log(`  Network: http://192.168.22.16:${PORT}/api/health`);
+    console.log(`  Network: http://192.168.31.1:${PORT}/api/health`);
     console.log(`Collaboration service initialized`);
 });
 

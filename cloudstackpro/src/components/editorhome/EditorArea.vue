@@ -161,7 +161,7 @@
         <!-- 输出面板 -->
         <div v-if="activePanelTab === '输出'" class="output-panel">
           <div>已成功连接到远程服务器</div>
-          <div>远程服务器: 8.137.125.47</div>
+          <div>远程服务器: 120.46.182.160</div>
         </div>
         
         <!-- 调试控制台 -->
@@ -185,7 +185,7 @@
         </div>
       </div>
       <div class="status-items-right">
-        <div class="status-item">远程: 8.137.125.47</div>
+        <div class="status-item">远程: 120.46.182.160</div>
         <div class="status-item">UTF-8</div>
         <div class="status-item">LF</div>
         <div class="status-item">{{ editorLanguage }}</div>
@@ -202,7 +202,7 @@ import * as monaco from 'monaco-editor'
 // import loader from '@monaco-editor/loader'
 
 // API基础URL
-const API_BASE_URL = 'http://192.168.22.16:3001/api'
+const API_BASE_URL ='http://localhost:3001/api'
 
 //协同编辑部分
 import * as Y from 'yjs'
@@ -377,7 +377,8 @@ const createYjsConnection = (filePath: string) => {
   // 创建新的Yjs文档和连接
   ydoc = new Y.Doc()
   yText = ydoc.getText('monaco')
-  provider = new WebsocketProvider('ws://192.168.22.16:1234', roomName, ydoc)
+  const yjsUrl = process.env.VUE_APP_YJS_WS_URL || 'ws://localhost:1234'
+  provider = new WebsocketProvider(yjsUrl, roomName, ydoc)
   currentRoom.value = roomName
   
   // 监听连接状态
@@ -642,7 +643,7 @@ const connectToSSH = async () => {
   
   try {
     const response = await axios.post(`${API_BASE_URL}/files/ssh/connect`, {
-      host: '8.137.125.47',
+      host: '120.46.182.160',
       username: 'root',
       password: 'Yaonikaixin999999',
       port: 22
