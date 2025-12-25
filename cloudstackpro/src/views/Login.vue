@@ -75,6 +75,15 @@
             />
           </div>
           <div class="input-field">
+            <i class="fas fa-envelope"></i>
+            <input
+              type="email"
+              placeholder="邮箱"
+              v-model="registerForm.email"
+              required
+            />
+          </div>
+          <div class="input-field">
             <i class="fas fa-phone"></i>
             <input 
               type="tel" 
@@ -181,6 +190,7 @@ export default {
       },
       registerForm: {
         username: '',
+        email: '',
         phone: '',
         password: ''
       },
@@ -196,35 +206,48 @@ export default {
       this.loginLoading = true
       
       try {
-        // 同时尝试博客系统登录
-        const blogResponse = await blogService.auth.login(this.loginForm)
-        
-        if (blogResponse.success) {
-          // 保存博客系统的 token 和用户信息
-          blogService.auth.saveLoginInfo(blogResponse.data.token, blogResponse.data.user)
-          
-          // 同时保存兼容旧系统的信息
-          localStorage.setItem('token', blogResponse.data.token)
-          localStorage.setItem('username', blogResponse.data.user.username)
-          
-          // 跳转到首页
-          this.$router.push('/editor')
-        } else {
-          this.loginError = blogResponse.message
+        const normalizedLoginForm = {
+          username: this.loginForm.username.trim(),
+          password: this.loginForm.password.trim()
         }
-      } catch (error) {
-        // 如果博客登录失败，尝试旧系统登录
+
+        let blogFailMessage = ''
         try {
-          const response = await userService.login(this.loginForm)
+          const blogResponse = await blogService.auth.login(normalizedLoginForm)
+          if (blogResponse.success) {
+            const blogUser = blogResponse.data.user
+            blogService.auth.saveLoginInfo(blogResponse.data.token, blogUser)
+            localStorage.setItem('token', blogResponse.data.token)
+            localStorage.setItem('username', blogUser.username)
+            if (blogUser.id) localStorage.setItem('userId', String(blogUser.id))
+            if (blogUser.avatar) localStorage.setItem('avatar', blogUser.avatar)
+            if (blogUser.role) localStorage.setItem('role', blogUser.role)
+            const isAdminUser = !!blogUser.isAdmin || blogUser.role === 'admin'
+            if (isAdminUser) {
+              localStorage.setItem('isAdmin', 'true')
+            } else {
+              localStorage.removeItem('isAdmin')
+            }
+            this.$router.push(isAdminUser ? '/admin' : '/editor')
+            return
+          }
+          blogFailMessage = blogResponse.message || ''
+        } catch (e) {
+          blogFailMessage = e?.message || ''
+        }
+
+        try {
+          const response = await userService.login(normalizedLoginForm)
           if (response.success) {
             localStorage.setItem('token', response.data.token)
             localStorage.setItem('username', response.data.username)
-            this.$router.push('/editor')
-          } else {
-            this.loginError = response.message
+            const isAdminUser = !!response.data.isAdmin || response.data.role === 'admin'
+            this.$router.push(isAdminUser ? '/admin' : '/editor')
+            return
           }
+          this.loginError = response.message || blogFailMessage || '登录失败，请重试'
         } catch (e) {
-          this.loginError = error.message || '登录失败，请重试'
+          this.loginError = e?.message || blogFailMessage || '登录失败，请重试'
         }
       } finally {
         this.loginLoading = false
@@ -246,19 +269,30 @@ export default {
         const blogResponse = await blogService.auth.register({
           username: this.registerForm.username,
           password: this.registerForm.password,
+          email: this.registerForm.email,
           phone: this.registerForm.phone
         })
         
         if (blogResponse.success) {
+          const blogUser = blogResponse.data.user
           // 保存博客系统的 token 和用户信息
-          blogService.auth.saveLoginInfo(blogResponse.data.token, blogResponse.data.user)
+          blogService.auth.saveLoginInfo(blogResponse.data.token, blogUser)
           
           // 同时保存兼容旧系统的信息
           localStorage.setItem('token', blogResponse.data.token)
-          localStorage.setItem('username', blogResponse.data.user.username)
+          localStorage.setItem('username', blogUser.username)
+          if (blogUser.id) localStorage.setItem('userId', String(blogUser.id))
+          if (blogUser.avatar) localStorage.setItem('avatar', blogUser.avatar)
+          if (blogUser.role) localStorage.setItem('role', blogUser.role)
+          const isAdminUser = !!blogUser.isAdmin || blogUser.role === 'admin'
+          if (isAdminUser) {
+            localStorage.setItem('isAdmin', 'true')
+          } else {
+            localStorage.removeItem('isAdmin')
+          }
           
-          // 跳转到博客首页
-          this.$router.push('/editor')
+          // 跳转到对应首页
+          this.$router.push(isAdminUser ? '/admin' : '/editor')
         } else {
           this.registerError = blogResponse.message
         }
@@ -269,7 +303,13 @@ export default {
           if (response.success) {
             localStorage.setItem('token', response.data.token)
             localStorage.setItem('username', response.data.username)
-            this.$router.push('/editor')
+            const isAdminUser = !!response.data.isAdmin || response.data.role === 'admin'
+            if (isAdminUser) {
+              localStorage.setItem('isAdmin', 'true')
+            } else {
+              localStorage.removeItem('isAdmin')
+            }
+            this.$router.push(isAdminUser ? '/admin' : '/editor')
           } else {
             this.registerError = response.message
           }
@@ -301,6 +341,17 @@ export default {
       const phoneRegex = /^\d{9,11}$/;
       if (!phoneRegex.test(this.registerForm.phone)) {
         this.registerError = '请输入有效的手机号'
+        return false
+      }
+      
+      if (!this.registerForm.email.trim()) {
+        this.registerError = '邮箱不能为空'
+        return false
+      }
+      
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(this.registerForm.email)) {
+        this.registerError = '请输入有效的邮箱地址'
         return false
       }
       
