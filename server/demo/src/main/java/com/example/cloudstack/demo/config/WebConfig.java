@@ -14,6 +14,7 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 public class WebConfig implements WebMvcConfigurer {
 
         private final AuthInterceptor authInterceptor;
+        private final AdminOnlyInterceptor adminOnlyInterceptor;
 
         @Override
         public void addCorsMappings(CorsRegistry registry) {
@@ -53,5 +54,7 @@ public class WebConfig implements WebMvcConfigurer {
                                                 "/api/comments/post/**",
                                                 "/api/users" // GET 搜索用户
                                 );
+                registry.addInterceptor(adminOnlyInterceptor)
+                                .addPathPatterns("/api/admin/**");
         }
 }

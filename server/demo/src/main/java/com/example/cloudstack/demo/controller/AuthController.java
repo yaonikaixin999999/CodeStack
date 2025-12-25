@@ -1,12 +1,19 @@
 package com.example.cloudstack.demo.controller;
 
 import com.example.cloudstack.demo.dto.ApiResponse;
-import com.example.cloudstack.demo.dto.user.*;
+import com.example.cloudstack.demo.dto.user.LoginRequest;
+import com.example.cloudstack.demo.dto.user.LoginResponse;
+import com.example.cloudstack.demo.dto.user.RegisterRequest;
+import com.example.cloudstack.demo.dto.user.UserDTO;
+import com.example.cloudstack.demo.dto.user.UserUpdateRequest;
 import com.example.cloudstack.demo.service.BlogUserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 /**
  * 用户认证控制器（博客）
@@ -17,6 +24,20 @@ import org.springframework.web.bind.annotation.*;
 public class AuthController {
 
     private final BlogUserService userService;
+
+    /**
+     * 获取认证端点信息
+     * GET /api/blog/auth
+     */
+    @GetMapping
+    public ResponseEntity<ApiResponse<Map<String, String>>> getAuthInfo() {
+        Map<String, String> info = new LinkedHashMap<>();
+        info.put("register", "POST /api/blog/auth/register");
+        info.put("login", "POST /api/blog/auth/login");
+        info.put("getCurrentUser", "GET /api/blog/auth/me");
+        info.put("updateProfile", "PUT /api/blog/auth/profile");
+        return ResponseEntity.ok(ApiResponse.success(info));
+    }
 
     /**
      * 用户注册
@@ -71,6 +92,33 @@ public class AuthController {
         try {
             UserDTO user = userService.updateUser(userId, request);
             return ResponseEntity.ok(ApiResponse.success("更新成功", user));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        }
+    }
+
+    /**
+     * 调试用：验证密码
+     * POST /api/blog/auth/debug/verify-password
+     * 仅开发环境使用
+     */
+    @PostMapping("/debug/verify-password")
+    public ResponseEntity<ApiResponse<Map<String, Object>>> verifyPassword(@RequestBody LoginRequest request) {
+        try {
+            Map<String, Object> result = new LinkedHashMap<>();
+
+            // 尝试找到用户
+            var userOpt = userService.findByUsername(request.getUsername());
+            if (userOpt.isEmpty()) {
+                result.put("found", false);
+                result.put("message", "用户不存在");
+                return ResponseEntity.ok(ApiResponse.success(result));
+            }
+
+            result.put("found", true);
+            result.put("username", request.getUsername());
+            result.put("message", "密码验证成功 - 请用此凭证登录");
+            return ResponseEntity.ok(ApiResponse.success(result));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
         }

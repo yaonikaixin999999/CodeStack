@@ -23,5 +23,7 @@ public class RegisterRequest {
     @Size(min = 6, max = 100, message = "密码长度必须在6-100之间")
     private String password;
 
+    private String phone;
+
     private String nickname;
 }

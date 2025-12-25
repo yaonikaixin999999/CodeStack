@@ -1,6 +1,6 @@
 import axios from 'axios'
 
-const API_BASE_URL = 'http://192.168.22.16:8080/api/auth'
+const API_BASE_URL = 'http://localhost:8082/api/auth'
 
 // 定义接口类型
 interface LoginForm {
@@ -21,14 +21,15 @@ interface ApiResponse<T> {
 }
 
 interface AuthData {
-    token: string
-    username: string
+  token: string
+  username: string
+  userId?: number
+  isAdmin?: boolean
+  role?: string
+  avatar?: string
 }
 
-interface CurrentUser {
-    token: string
-    username: string
-}
+interface CurrentUser extends AuthData {}
 
 // 创建axios实例
 const api = axios.create({
@@ -59,6 +60,14 @@ export const userService = {
         try {
             const response = await api.post('/login', loginForm)
             const data: ApiResponse<AuthData> = response.data
+            if (data.success && data.data) {
+              localStorage.setItem('token', data.data.token)
+              localStorage.setItem('username', data.data.username)
+              if (data.data.userId) localStorage.setItem('userId', String(data.data.userId))
+              if (data.data.avatar) localStorage.setItem('avatar', data.data.avatar)
+              if (data.data.isAdmin) localStorage.setItem('isAdmin', 'true')
+              if (data.data.role) localStorage.setItem('role', data.data.role)
+            }
             return data
         } catch (error: any) {
             if (error.response?.status === 401) {
@@ -90,12 +99,20 @@ export const userService = {
     getCurrentUser: (): CurrentUser | null => {
         const token = localStorage.getItem('token')
         const username = localStorage.getItem('username')
-        return token && username ? { token, username } : null
+        const userId = localStorage.getItem('userId')
+        const isAdmin = localStorage.getItem('isAdmin') === 'true'
+        const role = localStorage.getItem('role') || undefined
+        const avatar = localStorage.getItem('avatar') || undefined
+        return token && username ? { token, username, userId: userId ? Number(userId) : undefined, isAdmin, role, avatar } : null
     },
 
     // 登出
     logout: (): void => {
         localStorage.removeItem('token')
         localStorage.removeItem('username')
+        localStorage.removeItem('userId')
+        localStorage.removeItem('isAdmin')
+        localStorage.removeItem('role')
+        localStorage.removeItem('avatar')
     }
 }

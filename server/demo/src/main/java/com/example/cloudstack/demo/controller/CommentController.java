@@ -12,6 +12,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.LinkedHashMap;
+import java.util.Map;
+
 /**
  * 评论控制器
  */
@@ -22,6 +25,21 @@ public class CommentController {
 
     private final CommentService commentService;
     private final LikeService likeService;
+
+    /**
+     * 获取评论端点信息
+     * GET /api/comments
+     */
+    @GetMapping
+    public ResponseEntity<ApiResponse<Map<String, String>>> getCommentInfo() {
+        Map<String, String> info = new LinkedHashMap<>();
+        info.put("getPostComments", "GET /api/comments/post/{postId}");
+        info.put("createComment", "POST /api/comments");
+        info.put("getComment", "GET /api/comments/{id}");
+        info.put("updateComment", "PUT /api/comments/{id}");
+        info.put("deleteComment", "DELETE /api/comments/{id}");
+        return ResponseEntity.ok(ApiResponse.success(info));
+    }
 
     /**
      * 获取文章评论

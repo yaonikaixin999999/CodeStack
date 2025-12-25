@@ -10,6 +10,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.time.LocalDateTime;
 import java.util.Optional;
 
 /**
@@ -74,4 +75,9 @@ public interface PostRepository extends JpaRepository<Post, Long> {
     // 根据标签查询文章
     @Query("SELECT DISTINCT p FROM Post p JOIN p.tags t WHERE t.id = :tagId AND p.status = 1 AND p.deletedAt IS NULL")
     Page<Post> findByTagId(@Param("tagId") Long tagId, Pageable pageable);
+
+    List<Post> findByStatusAndPublishedAtAfter(Integer status, LocalDateTime publishedAt);
+
+    @Query("SELECT p.categoryId, COUNT(p) FROM Post p WHERE p.deletedAt IS NULL AND p.categoryId IS NOT NULL GROUP BY p.categoryId")
+    List<Object[]> countPostsByCategory();
 }
