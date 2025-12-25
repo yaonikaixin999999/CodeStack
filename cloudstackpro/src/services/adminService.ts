@@ -1,7 +1,16 @@
 import axios from 'axios'
 
+// 动态获取 API 地址
+const getApiBaseUrl = () => {
+  const hostname = window.location.hostname
+  if (hostname === 'localhost' || hostname === '127.0.0.1') {
+    return 'http://localhost:8082/api/admin'
+  }
+  return `http://${hostname}:8082/api/admin`
+}
+
 const api = axios.create({
-  baseURL: 'http://localhost:8082/api/admin',
+  baseURL: getApiBaseUrl(),
   timeout: 10000,
   headers: { 'Content-Type': 'application/json' }
 })

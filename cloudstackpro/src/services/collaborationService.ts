@@ -73,9 +73,17 @@ class CollaborationService {
         return `${adjective}${animal}${number}`;
     }
 
+    private getBaseUrl(): string {
+        const hostname = window.location.hostname;
+        if (hostname === 'localhost' || hostname === '127.0.0.1') {
+            return 'http://localhost:3001';
+        }
+        return `http://${hostname}:3001`;
+    }
+
     private connect(): void {
         try {
-            const baseUrl = 'http://localhost:3001';
+            const baseUrl = this.getBaseUrl();
             this.socket = io(baseUrl, {
                 reconnection: true,
                 reconnectionAttempts: this.maxReconnectAttempts,

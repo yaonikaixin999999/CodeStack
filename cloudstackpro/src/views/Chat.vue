@@ -92,7 +92,16 @@ const isAdmin = currentUser?.isAdmin || false
 const ADMIN_USER_ID = 1
 const MAX_RECENT = 12
 const RECENT_KEY = currentUserId ? `chat_recent_${currentUserId}` : 'chat_recent_guest'
-const CHAT_API_BASE_URL = 'http://localhost:8082/api/chat'
+
+// 动态获取 API 地址
+const getApiBaseUrl = () => {
+  const hostname = window.location.hostname
+  if (hostname === 'localhost' || hostname === '127.0.0.1') {
+    return 'http://localhost:8082/api/chat'
+  }
+  return `http://${hostname}:8082/api/chat`
+}
+const CHAT_API_BASE_URL = getApiBaseUrl()
 
 interface ChatContact {
   id: number

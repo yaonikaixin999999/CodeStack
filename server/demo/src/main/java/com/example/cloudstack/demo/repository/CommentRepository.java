@@ -23,11 +23,17 @@ public interface CommentRepository extends JpaRepository<Comment, Long> {
     Page<Comment> findTopLevelCommentsByPostId(@Param("postId") Long postId, Pageable pageable);
 
     // 查询评论的回复
-    @Query("SELECT c FROM Comment c WHERE c.parentId = :parentId AND c.status = 1 ORDER BY c.createdAt ASC")
+    // @Query("SELECT c FROM Comment c WHERE c.parentId = :parentId AND c.status = 1
+    // ORDER BY c.createdAt ASC")
     List<Comment> findRepliesByParentId(@Param("parentId") Long parentId);
+
+    List<Comment> findByStatusInAndCreatedAtAfter(List<Integer> statuses, LocalDateTime createdAt);
 
     // 查询用户的评论
     Page<Comment> findByUserIdAndStatus(Long userId, Integer status, Pageable pageable);
+
+    // 根据状态查询评论
+    Page<Comment> findByStatus(Integer status, Pageable pageable);
 
     // 统计文章评论数
     @Query("SELECT COUNT(c) FROM Comment c WHERE c.postId = :postId AND c.status = 1")

@@ -1,7 +1,17 @@
 import axios from 'axios'
 
-// API 基础配置
-const API_BASE_URL = 'http://localhost:8082/api'
+// API 基础配置 - 动态获取当前主机地址
+const getApiBaseUrl = () => {
+    const hostname = window.location.hostname
+    // 如果是 localhost 或 127.0.0.1，使用 localhost
+    // 否则使用当前主机的 IP 地址（局域网访问）
+    if (hostname === 'localhost' || hostname === '127.0.0.1') {
+        return 'http://localhost:8082/api'
+    }
+    return `http://${hostname}:8082/api`
+}
+
+const API_BASE_URL = getApiBaseUrl()
 
 // 创建 axios 实例
 const api = axios.create({

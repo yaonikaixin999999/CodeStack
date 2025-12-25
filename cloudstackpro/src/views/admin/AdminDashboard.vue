@@ -890,10 +890,18 @@ const handleModeration = async (item: ModerationItem, approve: boolean) => {
 
 let sse: EventSource | null = null
 
+const getApiHost = () => {
+  const hostname = window.location.hostname
+  if (hostname === 'localhost' || hostname === '127.0.0.1') {
+    return 'localhost'
+  }
+  return hostname
+}
+
 const setupSse = () => {
   const token = localStorage.getItem('token')
   if (!token) return
-  const url = `http://localhost:8082/api/admin/stream?token=${encodeURIComponent(token)}`
+  const url = `http://${getApiHost()}:8082/api/admin/stream?token=${encodeURIComponent(token)}`
   sse = new EventSource(url)
   sse.addEventListener('refresh', () => loadDashboard())
   sse.onerror = () => {

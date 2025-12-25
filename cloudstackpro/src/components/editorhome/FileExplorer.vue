@@ -160,8 +160,15 @@
   import newFileIcon from '@/images/icons8-添加文件-80.png';
   import newFolderIcon from '@/images/icons8-新增文件夹-80.png';
   
-  // API 基础 URL
-  const API_BASE_URL ='http://localhost:3001/api';
+  // API 基础 URL - 动态获取
+  const getApiBaseUrl = () => {
+    const hostname = window.location.hostname;
+    if (hostname === 'localhost' || hostname === '127.0.0.1') {
+      return 'http://localhost:3001/api';
+    }
+    return `http://${hostname}:3001/api`;
+  }
+  const API_BASE_URL = getApiBaseUrl();
   
   // 文件类型接口
   interface FileNode {

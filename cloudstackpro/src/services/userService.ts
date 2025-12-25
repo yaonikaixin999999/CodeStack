@@ -1,6 +1,15 @@
 import axios from 'axios'
 
-const API_BASE_URL = 'http://192.168.31.1:8080/api/auth'
+// 动态获取 API 地址
+const getApiBaseUrl = () => {
+    const hostname = window.location.hostname
+    if (hostname === 'localhost' || hostname === '127.0.0.1') {
+        return 'http://localhost:8082/api/auth'
+    }
+    return `http://${hostname}:8082/api/auth`
+}
+
+const API_BASE_URL = getApiBaseUrl()
 
 // 定义接口类型
 interface LoginForm {

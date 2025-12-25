@@ -85,7 +85,7 @@
             <table class="content-table">
               <thead>
                 <tr>
-                  <th>评论人</th>
+                  <th>用户名</th>
                   <th>内容</th>
                   <th>时间</th>
                   <th>操作</th>
@@ -99,7 +99,7 @@
                       :to="{ path: `/admin/blog/profile/${comment.userId}`, query: { from: 'moderation' } }"
                       class="link-user"
                     >
-                      用户 {{ comment.userId }}
+                      {{ comment.username }}
                     </router-link>
                     <span v-else>—</span>
                   </td>

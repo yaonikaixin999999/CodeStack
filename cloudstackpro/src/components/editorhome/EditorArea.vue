@@ -201,8 +201,15 @@ import axios from 'axios'
 import * as monaco from 'monaco-editor'
 // import loader from '@monaco-editor/loader'
 
-// API基础URL
-const API_BASE_URL ='http://localhost:3001/api'
+// API基础URL - 动态获取
+const getApiBaseUrl = () => {
+  const hostname = window.location.hostname;
+  if (hostname === 'localhost' || hostname === '127.0.0.1') {
+    return 'http://localhost:3001/api';
+  }
+  return `http://${hostname}:3001/api`;
+}
+const API_BASE_URL = getApiBaseUrl()
 
 //协同编辑部分
 import * as Y from 'yjs'
@@ -377,7 +384,15 @@ const createYjsConnection = (filePath: string) => {
   // 创建新的Yjs文档和连接
   ydoc = new Y.Doc()
   yText = ydoc.getText('monaco')
-  const yjsUrl = process.env.VUE_APP_YJS_WS_URL || 'ws://localhost:1234'
+  // 动态获取 Yjs WebSocket URL
+  const getYjsUrl = () => {
+    const hostname = window.location.hostname;
+    if (hostname === 'localhost' || hostname === '127.0.0.1') {
+      return 'ws://localhost:1234';
+    }
+    return `ws://${hostname}:1234`;
+  }
+  const yjsUrl = process.env.VUE_APP_YJS_WS_URL || getYjsUrl()
   provider = new WebsocketProvider(yjsUrl, roomName, ydoc)
   currentRoom.value = roomName
   

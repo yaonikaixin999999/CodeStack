@@ -12,13 +12,13 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.data.domain.Sort;
 
 import java.io.IOException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
-import java.util.Base64;
 import java.util.stream.Collectors;
 
 @Service
@@ -28,9 +28,11 @@ public class AdminService {
     private final UserRepository userRepository;
     private final CategoryRepository categoryRepository;
 
-    private final List<org.springframework.web.servlet.mvc.method.annotation.SseEmitter> emitters = Collections.synchronizedList(new ArrayList<>());
+    private final List<org.springframework.web.servlet.mvc.method.annotation.SseEmitter> emitters = Collections
+            .synchronizedList(new ArrayList<>());
 
-    public AdminService(PostRepository postRepository, CommentRepository commentRepository, UserRepository userRepository, CategoryRepository categoryRepository) {
+    public AdminService(PostRepository postRepository, CommentRepository commentRepository,
+            UserRepository userRepository, CategoryRepository categoryRepository) {
         this.postRepository = postRepository;
         this.commentRepository = commentRepository;
         this.userRepository = userRepository;
@@ -42,7 +44,8 @@ public class AdminService {
         long totalUsers = userRepository.count();
         long totalComments = commentRepository.count();
         long pendingPosts = postRepository.findAll().stream().filter(p -> Objects.equals(p.getStatus(), 2)).count();
-        long pendingComments = commentRepository.findAll().stream().filter(c -> Objects.equals(c.getStatus(), 0)).count();
+        long pendingComments = commentRepository.findAll().stream().filter(c -> Objects.equals(c.getStatus(), 0))
+                .count();
 
         List<Post> recentPosts = postRepository.findAll(PageRequest.of(0, recentLimit)).getContent();
         List<Map<String, Object>> recentPostDtos = recentPosts.stream().map(p -> {
@@ -109,7 +112,9 @@ public class AdminService {
                 .map(p -> p.getPublishedAt() != null ? p.getPublishedAt() : p.getCreatedAt())
                 .collect(Collectors.toList());
 
-        List<Comment> comments = commentRepository.findByStatusAndCreatedAtAfter(1, commentStart);
+        // List<Comment> comments = commentRepository.findByStatusAndCreatedAtAfter(1,
+        // commentStart);
+        List<Comment> comments = commentRepository.findByStatusInAndCreatedAtAfter(Arrays.asList(0, 1), commentStart);
         List<LocalDateTime> commentDates = comments.stream()
                 .map(Comment::getCreatedAt)
                 .collect(Collectors.toList());
@@ -200,11 +205,20 @@ public class AdminService {
     }
 
     public List<Map<String, Object>> listComments(Integer status, Integer limit) {
-        List<Comment> comments = commentRepository.findAll(PageRequest.of(0, limit != null ? limit : 50)).getContent();
+        // List<Comment> comments = commentRepository.findAll(PageRequest.of(0, limit !=
+        // null ? limit : 50)).getContent();
+        int safeLimit = limit != null ? limit : 50;
+        PageRequest pageRequest = PageRequest.of(0, safeLimit, Sort.by(Sort.Direction.DESC, "createdAt"));
+        List<Comment> comments = status == null
+                ? commentRepository.findAll(pageRequest).getContent()
+                : commentRepository.findByStatus(status, pageRequest).getContent();
         return comments.stream()
-                .filter(c -> status == null || Objects.equals(c.getStatus(), status))
+                // .filter(c -> status == null || Objects.equals(c.getStatus(), status))
                 .map(c -> {
+
+                    User author = c.getUserId() != null ? userRepository.findById(c.getUserId()).orElse(null) : null;
                     Map<String, Object> m = new LinkedHashMap<>();
+                    m.put("username", author != null ? author.getUsername() : null);
                     m.put("id", c.getId());
                     m.put("userId", c.getUserId());
                     m.put("content", c.getContent());
@@ -323,7 +337,8 @@ public class AdminService {
     }
 
     public org.springframework.web.servlet.mvc.method.annotation.SseEmitter subscribe() {
-        org.springframework.web.servlet.mvc.method.annotation.SseEmitter emitter = new org.springframework.web.servlet.mvc.method.annotation.SseEmitter(0L);
+        org.springframework.web.servlet.mvc.method.annotation.SseEmitter emitter = new org.springframework.web.servlet.mvc.method.annotation.SseEmitter(
+                0L);
         emitters.add(emitter);
         emitter.onCompletion(() -> emitters.remove(emitter));
         emitter.onTimeout(() -> emitters.remove(emitter));
@@ -336,7 +351,8 @@ public class AdminService {
             while (it.hasNext()) {
                 org.springframework.web.servlet.mvc.method.annotation.SseEmitter e = it.next();
                 try {
-                    e.send(org.springframework.web.servlet.mvc.method.annotation.SseEmitter.event().name("refresh").data("refresh"));
+                    e.send(org.springframework.web.servlet.mvc.method.annotation.SseEmitter.event().name("refresh")
+                            .data("refresh"));
                 } catch (Exception ex) {
                     it.remove();
                 }
@@ -345,10 +361,14 @@ public class AdminService {
     }
 
     private String statusLabel(Integer status) {
-        if (status == null) return "草稿";
-        if (status == 1) return "已发布";
-        if (status == 2) return "待审核";
-        if (status == 3) return "已下架";
+        if (status == null)
+            return "草稿";
+        if (status == 1)
+            return "已发布";
+        if (status == 2)
+            return "待审核";
+        if (status == 3)
+            return "已下架";
         return "草稿";
     }
 
@@ -360,7 +380,8 @@ public class AdminService {
             counts.put(date, 0L);
         }
         for (LocalDateTime dt : dates) {
-            if (dt == null) continue;
+            if (dt == null)
+                continue;
             LocalDate date = dt.toLocalDate();
             if (counts.containsKey(date)) {
                 counts.put(date, counts.get(date) + 1);
