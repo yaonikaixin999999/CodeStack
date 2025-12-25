@@ -52,7 +52,7 @@
                   <td>
                     <router-link
                       v-if="post.userId"
-                      :to="`/admin/blog/profile/${post.userId}`"
+                      :to="{ path: `/admin/blog/profile/${post.userId}`, query: { from: 'moderation' } }"
                       class="link-user"
                     >
                       用户 {{ post.userId }}
@@ -96,7 +96,7 @@
                   <td>
                     <router-link
                       v-if="comment.userId"
-                      :to="`/admin/blog/profile/${comment.userId}`"
+                      :to="{ path: `/admin/blog/profile/${comment.userId}`, query: { from: 'moderation' } }"
                       class="link-user"
                     >
                       用户 {{ comment.userId }}

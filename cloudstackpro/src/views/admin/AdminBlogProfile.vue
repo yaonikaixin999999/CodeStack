@@ -37,25 +37,15 @@
               </span>
             </div>
           </div>
-          <div class="user-actions" v-if="!isOwner">
+          <div class="user-actions" v-if="isViewingUserById">
             <button class="action-btn primary" :class="{ followed: isFollowed }" @click="toggleFollow">
               <img :src="isFollowed ? checkIcon : plusIcon" alt="" class="btn-icon" />
               {{ isFollowed ? '已关注' : '关注' }}
             </button>
-            <button class="action-btn">
+            <button class="action-btn" :disabled="isOwner">
               <img src="@/assets/blog/icons/comment.svg" alt="私信" class="btn-icon" />
               私信
             </button>
-          </div>
-          <div class="user-actions" v-else>
-            <router-link to="/admin/profile" class="action-btn">
-              <img src="@/assets/blog/icons/edit.svg" alt="编辑" class="btn-icon" />
-              编辑资料
-            </router-link>
-            <router-link to="/admin/profile" class="action-btn">
-              <img src="@/assets/blog/icons/settings.svg" alt="设置" class="btn-icon" />
-              设置
-            </router-link>
           </div>
         </div>
       </header>
@@ -268,6 +258,7 @@ export default defineComponent({
     const isFollowed = ref(false)
     const activeTab = ref('posts')
     const currentUser = ref(blogService.auth.getLocalUser())
+    const isViewingUserById = ref(!!route.params.id)
     
     const makeDefaultUserInfo = (seed: string, id?: number) => ({
       id: id || 0,
@@ -564,6 +555,7 @@ export default defineComponent({
     watch(
       () => route.params.id,
       async () => {
+        isViewingUserById.value = !!route.params.id
         userInfo.value = makeDefaultUserInfo(getProfileSeed())
         activeTab.value = 'posts'
         userPosts.value = []
@@ -583,6 +575,10 @@ export default defineComponent({
     const goBack = () => {
       if (window.history.length > 1) {
         router.back()
+        return
+      }
+      if (route.query.from === 'moderation') {
+        router.push('/admin/moderation')
         return
       }
       router.push('/admin/users')
@@ -605,7 +601,8 @@ export default defineComponent({
       toggleFollow,
       plusIcon,
       checkIcon,
-      goBack
+      goBack,
+      isViewingUserById
     }
   }
 })
@@ -656,6 +653,11 @@ export default defineComponent({
   width: 16px;
   height: 16px;
   opacity: 0.6;
+}
+
+.user-actions .action-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .profile-header {

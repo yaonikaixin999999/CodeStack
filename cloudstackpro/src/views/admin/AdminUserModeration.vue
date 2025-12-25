@@ -90,7 +90,7 @@ const errorMessage = ref('')
 
 const goProfile = (user?: AdminUser) => {
   if (!user?.id) return
-  router.push(`/admin/blog/profile/${user.id}`)
+  router.push({ path: `/admin/blog/profile/${user.id}`, query: { from: 'moderation' } })
 }
 
 const goSearchHero = () => {
