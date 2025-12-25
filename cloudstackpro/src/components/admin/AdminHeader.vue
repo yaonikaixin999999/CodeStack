@@ -209,7 +209,7 @@ export default defineComponent({
     }
 
     const goChat = () => {
-      router.push('/chat')
+      router.push('/admin/messages')
     }
 
     return {

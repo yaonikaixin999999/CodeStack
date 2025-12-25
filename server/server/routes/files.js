@@ -7,7 +7,7 @@ const sshService = require('../services/sshService');
 
 // 远程服务器配置 - 支持环境变量覆盖
 const REMOTE_SERVER_CONFIG = {
-    host: process.env.REMOTE_HOST || '8.137.125.47',  // 你的Linux服务器IP
+    host: process.env.REMOTE_HOST || '120.46.182.160',  // 你的Linux服务器IP
     username: process.env.REMOTE_USERNAME || 'root',      // SSH用户名
     password: process.env.REMOTE_PASSWORD || 'Yaonikaixin999999', // SSH密码
     port: parseInt(process.env.REMOTE_PORT) || 22,              // SSH端口
@@ -130,7 +130,7 @@ router.post('/ssh/connect', async (req, res) => {
         console.log(`尝试连接SSH: ${username}@${host}:${port}`);
 
         const config = {
-            host: host || '8.137.125.47',
+            host: host || '120.46.182.160',
             username: username || 'root',
             password: password || 'Yaonikaixin999999',
             port: port || 22

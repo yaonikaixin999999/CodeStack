@@ -110,7 +110,7 @@ public class AdminService {
                 .map(p -> p.getPublishedAt() != null ? p.getPublishedAt() : p.getCreatedAt())
                 .collect(Collectors.toList());
 
-        List<Comment> comments = commentRepository.findByStatusAndCreatedAtAfter(1, commentStart);
+        List<Comment> comments = commentRepository.findByStatusInAndCreatedAtAfter(Arrays.asList(0, 1), commentStart);
         List<LocalDateTime> commentDates = comments.stream()
                 .map(Comment::getCreatedAt)
                 .collect(Collectors.toList());
@@ -208,9 +208,11 @@ public class AdminService {
                 : commentRepository.findByStatus(status, pageRequest).getContent();
         return comments.stream()
                 .map(c -> {
+                    User author = c.getUserId() != null ? userRepository.findById(c.getUserId()).orElse(null) : null;
                     Map<String, Object> m = new LinkedHashMap<>();
                     m.put("id", c.getId());
                     m.put("userId", c.getUserId());
+                    m.put("username", author != null ? author.getUsername() : null);
                     m.put("content", c.getContent());
                     m.put("createdAt", c.getCreatedAt() != null ? c.getCreatedAt().toString() : null);
                     return m;

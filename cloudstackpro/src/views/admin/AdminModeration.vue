@@ -99,7 +99,7 @@
                       :to="{ path: `/admin/blog/profile/${comment.userId}`, query: { from: 'moderation' } }"
                       class="link-user"
                     >
-                      用户 {{ comment.userId }}
+                      {{ comment.username || `用户 ${comment.userId}` }}
                     </router-link>
                     <span v-else>—</span>
                   </td>

@@ -75,7 +75,8 @@ class CollaborationService {
 
     private connect(): void {
         try {
-            this.socket = io('http://192.168.22.16:3001', {
+            const baseUrl = 'http://localhost:3001';
+            this.socket = io(baseUrl, {
                 reconnection: true,
                 reconnectionAttempts: this.maxReconnectAttempts,
                 reconnectionDelay: this.reconnectInterval,

@@ -171,7 +171,7 @@
   import { userService } from '@/services/userService'
   
   // API基础URL
-  const API_BASE_URL = 'http://192.168.22.16:3001/api'
+  const API_BASE_URL = 'http://192.168.31.1:3001/api'
   
   // 路由
   const router = useRouter()

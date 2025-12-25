@@ -13,6 +13,7 @@ const BlogWrite = () => import('../views/blog/BlogWrite.vue')
 const BlogCategory = () => import('../views/blog/BlogCategory.vue')
 const BlogSearch = () => import('../views/blog/BlogSearch.vue')
 const BlogProfile = () => import('../views/blog/BlogProfile.vue')
+const BlogMessages = () => import('../views/blog/BlogMessages.vue')
 
 // 管理后台页面
 const AdminDashboard = () => import('../views/admin/AdminDashboard.vue')
@@ -22,9 +23,10 @@ const AdminBlog = () => import('../views/admin/AdminBlog.vue')
 const AdminBlogPost = () => import('../views/admin/AdminBlogPost.vue')
 const AdminBlogProfile = () => import('../views/admin/AdminBlogProfile.vue')
 const AdminBlogSearch = () => import('../views/admin/AdminBlogSearch.vue')
+const AdminMessages = () => import('../views/admin/AdminMessages.vue')
 
 // 聊天
-const Chat = () => import('../views/Chat.vue')
+const Chat = () => import('../views/blog/BlogMessages.vue')
 
 // 导入用户服务
 import { userService } from '@/services/userService'
@@ -61,6 +63,10 @@ const routes: RouteRecordRaw[] = [
     meta: { requiresAuth: true, requiresAdmin: true }
   },
   {
+    path: '/admin/comments',
+    redirect: to => ({ path: '/admin/moderation', query: to.query })
+  },
+  {
     path: '/admin/users',
     name: 'AdminUserModeration',
     component: AdminUserModeration,
@@ -94,6 +100,12 @@ const routes: RouteRecordRaw[] = [
     path: '/admin/blog/search',
     name: 'AdminBlogSearch',
     component: AdminBlogSearch,
+    meta: { requiresAuth: true, requiresAdmin: true, isBlog: true }
+  },
+  {
+    path: '/admin/messages',
+    name: 'AdminMessages',
+    component: AdminMessages,
     meta: { requiresAuth: true, requiresAdmin: true, isBlog: true }
   },
   // 聊天
@@ -152,6 +164,12 @@ const routes: RouteRecordRaw[] = [
     path: '/blog/profile',
     name: 'BlogProfile',
     component: BlogProfile,
+    meta: { requiresAuth: true, isBlog: true }
+  },
+  {
+    path: '/blog/messages',
+    name: 'BlogMessages',
+    component: BlogMessages,
     meta: { requiresAuth: true, isBlog: true }
   }
 ]

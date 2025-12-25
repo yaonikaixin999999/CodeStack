@@ -114,6 +114,6 @@ INSERT INTO comments (post_id, user_id, parent_id, reply_to_user_id, content, li
 -- 追加样例
 INSERT INTO comments (post_id, user_id, parent_id, reply_to_user_id, content, like_count, reply_count, is_top, status, ip_address, created_at, updated_at) VALUES
 (16, 13, NULL, NULL, 'Flutter 的优化建议很实用，列表性能提升明显。', 3, 0, 0, 1, '192.168.1.201', '2024-12-10 09:20:00', NOW()),
-(16, 8, NULL, NULL, '图片缓存和分帧渲染是关键，学习了。', 2, 0, 0, 1, '192.168.1.202', '2024-12-10 10:05:00', NOW()),
-(17, 14, NULL, NULL, '安全清单很清晰，CSP 配置很重要。', 4, 0, 0, 1, '192.168.1.203', '2024-12-11 11:30:00', NOW())
+(16, 8, NULL, NULL, '图片缓存和分帧渲染是关键，学习了。', 2, 0, 0, 0, '192.168.1.202', '2024-12-10 10:05:00', NOW()),
+(17, 14, NULL, NULL, '安全清单很清晰，CSP 配置很重要。', 4, 0, 0, 0, '192.168.1.203', '2024-12-11 11:30:00', NOW())
 ON DUPLICATE KEY UPDATE id=id;

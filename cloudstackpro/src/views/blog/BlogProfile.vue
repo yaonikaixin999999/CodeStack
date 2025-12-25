@@ -43,7 +43,7 @@
               <img :src="isFollowed ? checkIcon : plusIcon" alt="" class="btn-icon" />
               {{ isFollowed ? '已关注' : '关注' }}
             </button>
-            <button class="action-btn">
+            <button class="action-btn" @click="sendMessage">
               <img src="@/assets/blog/icons/comment.svg" alt="私信" class="btn-icon" />
               私信
             </button>

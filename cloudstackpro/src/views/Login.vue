@@ -327,13 +327,13 @@ export default {
         return false
       }
       
-      if (this.registerForm.username.length < 2) {
-        this.registerError = '用户名至少2个字符'
+      if (this.registerForm.username.length < 3) {
+        this.registerError = '用户名至少3个字符'
         return false
       }
       
-      if (!this.registerForm.phone.trim()) {
-        this.registerError = '手机号不能为空'
+      if (!this.registerForm.email.trim()) {
+        this.registerError = '邮箱不能为空'
         return false
       }
       

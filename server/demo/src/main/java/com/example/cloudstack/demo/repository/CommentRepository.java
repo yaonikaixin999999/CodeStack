@@ -31,6 +31,8 @@ public interface CommentRepository extends JpaRepository<Comment, Long> {
 
     Page<Comment> findByStatus(Integer status, Pageable pageable);
 
+    List<Comment> findByStatusInAndCreatedAtAfter(List<Integer> statuses, LocalDateTime createdAt);
+
     // 统计文章评论数
     @Query("SELECT COUNT(c) FROM Comment c WHERE c.postId = :postId AND c.status = 1")
     long countByPostId(@Param("postId") Long postId);
