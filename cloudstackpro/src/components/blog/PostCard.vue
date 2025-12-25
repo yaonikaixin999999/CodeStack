@@ -48,6 +48,9 @@
         </div>
         
         <div class="card-actions">
+          <button v-if="canDelete" class="action-btn delete" @click="deletePost">
+            <img src="@/assets/blog/icons/close.svg" alt="删除" />
+          </button>
           <button class="action-btn" :class="{ 'liked': post.isLiked }" @click="toggleLike">
             <img src="@/assets/blog/icons/heart.svg" alt="点赞" />
           </button>
@@ -101,9 +104,13 @@ export default defineComponent({
     postRouteBase: {
       type: String,
       default: '/blog/post'
+    },
+    canDelete: {
+      type: Boolean,
+      default: false
     }
   },
-  emits: ['like', 'bookmark', 'share'],
+  emits: ['like', 'bookmark', 'share', 'delete'],
   setup(props, { emit }) {
     const formatDate = (dateStr: string) => {
       const date = new Date(dateStr)
@@ -136,13 +143,18 @@ export default defineComponent({
     const sharePost = () => {
       emit('share', props.post)
     }
+
+    const deletePost = () => {
+      emit('delete', props.post.id)
+    }
     
     return {
       formatDate,
       formatNumber,
       toggleLike,
       toggleBookmark,
-      sharePost
+      sharePost,
+      deletePost
     }
   }
 })
@@ -372,6 +384,15 @@ export default defineComponent({
 .action-btn.bookmarked img {
   opacity: 1;
   filter: invert(48%) sepia(91%) saturate(1417%) hue-rotate(196deg) brightness(101%) contrast(102%);
+}
+
+.action-btn.delete {
+  background: rgba(255, 77, 79, 0.1);
+}
+
+.action-btn.delete img {
+  opacity: 1;
+  filter: invert(39%) sepia(78%) saturate(2456%) hue-rotate(333deg) brightness(103%) contrast(103%);
 }
 
 @media (max-width: 768px) {

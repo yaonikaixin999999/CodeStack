@@ -120,9 +120,10 @@ public class PostController {
     @DeleteMapping("/{id}")
     public ResponseEntity<ApiResponse<Void>> deletePost(
             @PathVariable Long id,
-            @RequestAttribute("userId") Long userId) {
+            @RequestAttribute("userId") Long userId,
+            @RequestAttribute(value = "isAdmin", required = false) Boolean isAdmin) {
         try {
-            postService.deletePost(id, userId);
+            postService.deletePost(id, userId, isAdmin != null && isAdmin);
             return ResponseEntity.ok(ApiResponse.successMsg("删除成功"));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));

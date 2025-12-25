@@ -129,12 +129,12 @@ public class PostService {
      * 删除文章(软删除)
      */
     @Transactional
-    public void deletePost(Long postId, Long userId) {
+    public void deletePost(Long postId, Long userId, boolean isAdmin) {
         Post post = postRepository.findById(postId)
                 .orElseThrow(() -> new RuntimeException("文章不存在"));
 
         // 检查权限
-        if (!post.getUserId().equals(userId)) {
+        if (!isAdmin && !post.getUserId().equals(userId)) {
             throw new RuntimeException("无权删除此文章");
         }
 

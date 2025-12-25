@@ -70,9 +70,11 @@
                 :post="post"
                 :featured="index === 0"
                 :postRouteBase="postRouteBase"
+                :canDelete="true"
                 @like="handleLike"
                 @bookmark="handleBookmark"
                 @share="handleShare"
+                @delete="handleDelete"
               />
             </div>
 
@@ -339,6 +341,21 @@ const handleShare = (post: any) => {
   navigator.clipboard.writeText(url).then(() => {
     alert('链接已复制到剪贴板')
   })
+}
+
+const handleDelete = async (postId: number) => {
+  const ok = window.confirm('确定要删除这篇文章吗？删除后将无法恢复。')
+  if (!ok) return
+  try {
+    await blogService.posts.delete(postId)
+    posts.value = posts.value.filter(p => p.id !== postId)
+    if (posts.value.length === 0) {
+      currentPage.value = 0
+      await loadPosts()
+    }
+  } catch (error: any) {
+    alert(error?.message || '删除失败')
+  }
 }
 
 watch(
