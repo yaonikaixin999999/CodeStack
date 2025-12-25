@@ -70,7 +70,7 @@
 import { reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import AdminHeader from '@/components/admin/AdminHeader.vue'
-import { adminService } from '@/services/adminService'
+import { blogService } from '@/services/blogService'
 import { userService } from '@/services/userService'
 
 const router = useRouter()
@@ -100,6 +100,32 @@ const goSearchHero = () => {
   router.push({ path: '/admin', query: { q: heroKeyword.value.trim() } })
 }
 
+const compressImage = (file: File, maxLength = 180000) =>
+  new Promise<string>((resolve, reject) => {
+    const img = new Image()
+    img.onload = () => {
+      const canvas = document.createElement('canvas')
+      let width = 160
+      let height = (img.height / img.width) * width
+      let quality = 0.7
+      let dataUrl = ''
+      for (let i = 0; i < 6; i++) {
+        canvas.width = width
+        canvas.height = height
+        const ctx = canvas.getContext('2d')
+        ctx?.drawImage(img, 0, 0, width, height)
+        dataUrl = canvas.toDataURL('image/jpeg', quality)
+        if (dataUrl.length <= maxLength) break
+        width *= 0.85
+        height *= 0.85
+        quality *= 0.85
+      }
+      resolve(dataUrl)
+    }
+    img.onerror = reject
+    img.src = URL.createObjectURL(file)
+  })
+
 const onFileChange = async (e: Event) => {
   const target = e.target as HTMLInputElement
   const file = target.files?.[0]
@@ -112,14 +138,23 @@ const onFileChange = async (e: Event) => {
   }
   try {
     uploadState.uploading = true
-    const res = await adminService.uploadAvatar(file)
-    if (res.success && res.data) {
-      profile.avatar = res.data
-      localStorage.setItem('avatar', res.data)
-      uploadState.success = true
-    } else {
-      uploadState.error = res.message || '上传失败'
-    }
+    const dataUrl = await compressImage(file)
+    if (!dataUrl) return
+    const updated = await blogService.auth.updateProfile({ avatar: dataUrl })
+    const latestUser =
+      (updated && (updated as any).data) ||
+      (await blogService.auth.getCurrentUser().catch(() => null))?.data ||
+      null
+    const avatarToUse = latestUser?.avatar || dataUrl
+    profile.avatar = avatarToUse
+    localStorage.setItem('avatar', avatarToUse)
+    // 同步 blog_user 缓存，确保其它页面显示一致
+    const localUser = localStorage.getItem('blog_user')
+    const parsed = localUser ? JSON.parse(localUser) : {}
+    const next = { ...parsed, ...(latestUser || {}), avatar: avatarToUse }
+    localStorage.setItem('blog_user', JSON.stringify(next))
+    window.dispatchEvent(new CustomEvent('avatar-updated', { detail: avatarToUse }))
+    uploadState.success = true
   } catch (err: any) {
     uploadState.error = err?.message || '上传失败'
   } finally {

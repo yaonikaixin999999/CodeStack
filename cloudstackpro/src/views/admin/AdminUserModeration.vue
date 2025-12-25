@@ -73,14 +73,15 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { onMounted, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { userService } from '@/services/userService'
 import { adminService, type AdminUser } from '@/services/adminService'
 import AdminHeader from '@/components/admin/AdminHeader.vue'
 import AdminHero from '@/components/admin/AdminHero.vue'
 
 const router = useRouter()
+const route = useRoute()
 const currentUser = userService.getCurrentUser()
 const isAdmin = currentUser?.isAdmin || false
 
@@ -94,13 +95,12 @@ const goProfile = (user?: AdminUser) => {
 }
 
 const goSearchHero = () => {
-  if (!heroKeyword.value.trim()) return
-  router.push({ path: '/admin/users', query: { q: heroKeyword.value.trim() } })
+  router.push({ path: '/admin/users', query: heroKeyword.value.trim() ? { q: heroKeyword.value.trim() } : {} })
 }
 
-const loadUsers = async () => {
+const loadUsers = async (keyword?: string) => {
   try {
-    const res = await adminService.listUsers({})
+    const res = await adminService.listUsers(keyword ? { q: keyword } : {})
     if (res.success) {
       users.value = res.data || []
     }
@@ -141,9 +141,21 @@ const unbanUser = async (id: number) => {
 
 onMounted(() => {
   if (isAdmin) {
-    loadUsers()
+    const q = typeof route.query.q === 'string' ? route.query.q : ''
+    heroKeyword.value = q
+    loadUsers(q)
   }
 })
+
+watch(
+  () => route.query.q,
+  q => {
+    if (!isAdmin) return
+    const keyword = typeof q === 'string' ? q : ''
+    heroKeyword.value = keyword
+    loadUsers(keyword)
+  }
+)
 </script>
 
 <style scoped>

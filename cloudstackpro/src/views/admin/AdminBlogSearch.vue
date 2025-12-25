@@ -1,22 +1,21 @@
 <template>
-  <div class="blog-search">
-    <BlogHeader />
-    
+  <div class="admin-blog-search">
+    <AdminHeader />
+
     <main class="main-content">
       <div class="content-container">
-        <!-- 搜索头部 -->
         <header class="search-header">
           <div class="search-box-large">
             <img src="@/assets/blog/icons/search.svg" alt="搜索" class="search-icon" />
-            <input 
-              v-model="searchQuery" 
-              type="text" 
+            <input
+              v-model="searchQuery"
+              type="text"
               placeholder="搜索文章、标签或作者..."
               @keyup.enter="performSearch"
             />
             <button class="search-btn" @click="performSearch">搜索</button>
           </div>
-          
+
           <div class="search-info" v-if="hasSearched">
             <span class="result-count">
               找到 <strong>{{ totalResults }}</strong> 条相关结果
@@ -26,16 +25,15 @@
             </span>
           </div>
         </header>
-        
-        <!-- 热门搜索 -->
+
         <section class="hot-search" v-if="!hasSearched">
           <h3 class="section-title">
             <img src="@/assets/blog/icons/trending.svg" alt="热门搜索" class="title-icon" />
             热门搜索
           </h3>
           <div class="hot-tags">
-            <button 
-              v-for="tag in hotSearchTags" 
+            <button
+              v-for="tag in hotSearchTags"
               :key="tag"
               class="hot-tag"
               @click="searchByTag(tag)"
@@ -44,15 +42,13 @@
             </button>
           </div>
         </section>
-        
-        <!-- 搜索结果 -->
+
         <div class="main-grid" v-if="hasSearched">
           <section class="results-section">
-            <!-- 筛选器 -->
             <div class="filter-bar">
               <div class="filter-tabs">
-                <button 
-                  v-for="tab in filterTabs" 
+                <button
+                  v-for="tab in filterTabs"
                   :key="tab.id"
                   class="filter-tab"
                   :class="{ active: activeFilter === tab.id }"
@@ -63,7 +59,7 @@
                   <span class="tab-count">{{ tab.count }}</span>
                 </button>
               </div>
-              
+
               <div class="sort-select">
                 <select v-model="sortBy">
                   <option value="relevance">相关度</option>
@@ -73,11 +69,10 @@
                 <img src="@/assets/blog/icons/chevron-down.svg" alt="展开" class="select-icon" />
               </div>
             </div>
-            
-            <!-- 结果列表 -->
+
             <div class="results-list">
               <article v-for="result in searchResults" :key="result.id" class="result-item">
-                <router-link :to="`/blog/post/${result.id}`" class="result-content">
+                <router-link :to="`/admin/blog/post/${result.id}`" class="result-content">
                   <div class="result-main">
                     <h3 class="result-title">
                       <template v-for="(part, idx) in getHighlightParts(result.title)" :key="idx">
@@ -112,54 +107,55 @@
                 </router-link>
               </article>
             </div>
-            
-            <!-- 加载更多 -->
+
             <div class="load-more" v-if="searchResults.length > 0">
               <button class="load-more-btn" @click="loadMore">
                 <img src="@/assets/blog/icons/chevrons-down.svg" alt="加载更多" class="btn-icon" />
                 加载更多
               </button>
             </div>
-            
-            <!-- 无结果 -->
+
             <div class="no-results" v-if="hasSearched && searchResults.length === 0">
               <img src="@/assets/blog/icons/search.svg" alt="无结果" class="no-results-icon" />
-              <h3>未找到相关结果</h3>
-              <p>换个关键词试试？</p>
+              <h3>空空如也</h3>
+              <p>没有匹配到相关内容，换个关键词试试</p>
             </div>
           </section>
-          
-          <BlogSidebar />
+
+          <AdminBlogSidebar
+            :showAuthorCard="false"
+            :showArchive="false"
+            postRouteBase="/admin/blog/post"
+            tagRoutePath="/admin/blog/search"
+            tagQueryKey="tag"
+          />
         </div>
-        
-        <!-- 推荐阅读 -->
+
         <section class="recommend-section" v-if="!hasSearched">
           <h3 class="section-title">
             <img src="@/assets/blog/icons/zap.svg" alt="推荐阅读" class="title-icon" />
             推荐阅读
           </h3>
           <div class="recommend-grid">
-            <PostCard 
-              v-for="post in recommendPosts" 
-              :key="post.id" 
+            <AdminPostCard
+              v-for="post in recommendPosts"
+              :key="post.id"
               :post="post"
+              :postRouteBase="'/admin/blog/post'"
             />
           </div>
         </section>
       </div>
     </main>
-    
-    <BlogFooter />
   </div>
 </template>
 
 <script lang="ts">
-import { defineComponent, ref, onMounted, watch } from 'vue'
+import { defineComponent, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import BlogHeader from '@/components/blog/BlogHeader.vue'
-import BlogFooter from '@/components/blog/BlogFooter.vue'
-import BlogSidebar from '@/components/blog/BlogSidebar.vue'
-import PostCard from '@/components/blog/PostCard.vue'
+import AdminHeader from '@/components/admin/AdminHeader.vue'
+import AdminBlogSidebar from '@/components/admin/AdminBlogSidebar.vue'
+import AdminPostCard from '@/components/admin/AdminPostCard.vue'
 import { blogService } from '@/services/blogService'
 
 import bookIcon from '@/assets/blog/icons/book.svg'
@@ -167,17 +163,16 @@ import userIcon from '@/assets/blog/icons/user.svg'
 import categoryIcon from '@/assets/blog/icons/category.svg'
 
 export default defineComponent({
-  name: 'BlogSearch',
+  name: 'AdminBlogSearch',
   components: {
-    BlogHeader,
-    BlogFooter,
-    BlogSidebar,
-    PostCard
+    AdminHeader,
+    AdminBlogSidebar,
+    AdminPostCard
   },
   setup() {
     const route = useRoute()
     const router = useRouter()
-    
+
     const searchQuery = ref('')
     const hasSearched = ref(false)
     const totalResults = ref(0)
@@ -188,22 +183,21 @@ export default defineComponent({
     const currentPage = ref(0)
     const pageSize = ref(10)
     const hasMore = ref(true)
-    
+
     const hotSearchTags = ref([
       'Vue.js', 'React', 'TypeScript', 'Node.js', 'Python',
       '前端面试', '算法', '微服务', '人工智能', 'Docker'
     ])
-    
+
     const filterTabs = ref([
       { id: 'all', name: '全部', count: 0, icon: categoryIcon },
       { id: 'posts', name: '文章', count: 0, icon: bookIcon },
       { id: 'authors', name: '作者', count: 0, icon: userIcon }
     ])
-    
+
     const searchResults = ref<any[]>([])
     const recommendPosts = ref<any[]>([])
-    
-    // 加载热门标签
+
     const loadHotTags = async () => {
       try {
         const response = await blogService.tags.getHot(10)
@@ -214,8 +208,7 @@ export default defineComponent({
         console.error('加载热门标签失败:', error)
       }
     }
-    
-    // 加载推荐文章
+
     const loadRecommendPosts = async () => {
       try {
         const response = await blogService.posts.getFeatured(4)
@@ -241,27 +234,33 @@ export default defineComponent({
         }
       } catch (error) {
         console.error('加载推荐文章失败:', error)
-        // 使用默认数据
         recommendPosts.value = getDefaultRecommendPosts()
       }
     }
-    
-    // 执行搜索
+
     const performSearch = async () => {
-      if (!searchQuery.value.trim()) return
-      
+      const keyword = searchQuery.value.trim()
+      if (!keyword) {
+        searchResults.value = []
+        hasSearched.value = true
+        totalResults.value = 0
+        hasMore.value = false
+        searchTime.value = 0
+        router.replace({ name: 'AdminBlogSearch', query: {} })
+        return
+      }
+
       hasSearched.value = true
       loading.value = true
       currentPage.value = 0
       const startTime = Date.now()
-      
+
       try {
-        // 使用文章搜索 API（后端分页从0开始）
         const response = await blogService.posts.search(searchQuery.value, {
           page: currentPage.value,
           size: pageSize.value
         })
-        
+
         if (response.success && response.data) {
           searchResults.value = response.data.content.map(post => ({
             id: post.id,
@@ -275,32 +274,34 @@ export default defineComponent({
             createdAt: formatDate(post.publishedAt || post.createdAt || ''),
             views: formatCount(post.viewCount || 0)
           }))
-          
+
           totalResults.value = response.data.totalElements || searchResults.value.length
           hasMore.value = !response.data.last
-          
+
           filterTabs.value[0].count = totalResults.value
           filterTabs.value[1].count = totalResults.value
         }
       } catch (error) {
         console.error('搜索失败:', error)
-        searchResults.value = []  // 搜索失败时返回空数组，不显示默认结果
+        searchResults.value = []
         totalResults.value = 0
         hasMore.value = false
       } finally {
         searchTime.value = Date.now() - startTime
         loading.value = false
+        const nextQuery: any = {}
+        if (keyword) nextQuery.q = keyword
+        router.replace({ name: 'AdminBlogSearch', query: nextQuery })
       }
     }
-    
-    // 按标签搜索
+
     const searchByTag = async (tag: string) => {
       searchQuery.value = tag
       hasSearched.value = true
       loading.value = true
       currentPage.value = 0
       const startTime = Date.now()
-      
+
       try {
         const response = await blogService.tags.getPosts(tag, currentPage.value, pageSize.value)
         if (response.success && response.data) {
@@ -316,32 +317,32 @@ export default defineComponent({
             createdAt: formatDate(post.publishedAt || post.createdAt || ''),
             views: formatCount(post.viewCount || 0)
           }))
-          
+
           totalResults.value = response.data.totalElements || searchResults.value.length
           hasMore.value = !response.data.last
         }
       } catch (error) {
         console.error('标签搜索失败:', error)
-        await performSearch() // 降级到普通搜索
+        await performSearch()
       } finally {
         searchTime.value = Date.now() - startTime
         loading.value = false
+        router.replace({ name: 'AdminBlogSearch', query: { tag } })
       }
     }
-    
-    // 加载更多
+
     const loadMore = async () => {
       if (!hasMore.value || loading.value) return
-      
+
       currentPage.value++
       loading.value = true
-      
+
       try {
         const response = await blogService.posts.search(searchQuery.value, {
           page: currentPage.value,
           size: pageSize.value
         })
-        
+
         if (response.success && response.data) {
           const newResults = response.data.content.map(post => ({
             id: post.id,
@@ -355,7 +356,7 @@ export default defineComponent({
             createdAt: formatDate(post.publishedAt || post.createdAt || ''),
             views: formatCount(post.viewCount || 0)
           }))
-          
+
           searchResults.value.push(...newResults)
           hasMore.value = !response.data.last
         }
@@ -366,21 +367,21 @@ export default defineComponent({
         loading.value = false
       }
     }
-    
+
     const formatDate = (dateStr: string) => {
       if (!dateStr) return ''
       const date = new Date(dateStr)
       return `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}-${date.getDate().toString().padStart(2, '0')}`
     }
-    
+
     const formatCount = (count: number) => {
       if (count >= 1000) {
         return (count / 1000).toFixed(1) + 'k'
       }
       return count.toString()
     }
-    
-    const escapeRegExp = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+
+    const escapeRegExp = (value: string) => value.replace(/[-/\\^$*+?.()|[\\]{}]/g, '\\$&')
 
     type HighlightPart = { text: string; highlight: boolean }
 
@@ -389,7 +390,7 @@ export default defineComponent({
       const keyword = searchQuery.value.trim()
       if (!keyword) return [{ text: input, highlight: false }]
 
-      const keywords = Array.from(new Set(keyword.split(/\s+/).map(k => k.trim()).filter(Boolean)))
+      const keywords = Array.from(new Set(keyword.split(/\\s+/).map(k => k.trim()).filter(Boolean)))
       if (keywords.length === 0) return [{ text: input, highlight: false }]
 
       const regex = new RegExp(`(${keywords.map(escapeRegExp).join('|')})`, 'gi')
@@ -417,21 +418,7 @@ export default defineComponent({
       if (parts.length === 0) return [{ text: input, highlight: false }]
       return parts
     }
-    
-    // 默认搜索结果
-    const getDefaultSearchResults = () => [
-      {
-        id: 1,
-        title: 'Vue 3.0 Composition API 完全指南',
-        excerpt: '深入探讨 Vue 3.0 的 Composition API，包括 setup 函数、响应式系统等核心概念...',
-        coverImage: 'https://picsum.photos/200/150?random=20',
-        author: { name: '技术小白', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=1' },
-        createdAt: '2025-12-15',
-        views: '2.3k'
-      }
-    ]
-    
-    // 默认推荐文章
+
     const getDefaultRecommendPosts = () => [
       {
         id: 1,
@@ -449,21 +436,20 @@ export default defineComponent({
         isBookmarked: false
       }
     ]
-    
-    // 监听排序变化
+
     watch(sortBy, () => {
       if (hasSearched.value) {
         performSearch()
       }
     })
-    
+
     onMounted(async () => {
       await loadHotTags()
       await loadRecommendPosts()
-      
+
       const query = route.query.q as string
       const tag = route.query.tag as string
-      
+
       if (query) {
         searchQuery.value = query
         await performSearch()
@@ -471,7 +457,7 @@ export default defineComponent({
         await searchByTag(tag)
       }
     })
-    
+
     return {
       searchQuery,
       hasSearched,
@@ -495,7 +481,7 @@ export default defineComponent({
 </script>
 
 <style scoped>
-.blog-search {
+.admin-blog-search {
   min-height: 100vh;
   background: var(--background-gradient);
 }
@@ -510,7 +496,6 @@ export default defineComponent({
   padding: 32px 24px;
 }
 
-/* Search Header */
 .search-header {
   margin-bottom: 32px;
 }
@@ -579,7 +564,6 @@ export default defineComponent({
   color: var(--text-muted);
 }
 
-/* Hot Search */
 .hot-search {
   margin-bottom: 40px;
 }
@@ -622,7 +606,6 @@ export default defineComponent({
   transform: translateY(-2px);
 }
 
-/* Main Grid */
 .main-grid {
   display: flex;
   gap: 32px;
@@ -633,7 +616,6 @@ export default defineComponent({
   min-width: 0;
 }
 
-/* Filter Bar */
 .filter-bar {
   display: flex;
   align-items: center;
@@ -718,7 +700,6 @@ export default defineComponent({
   pointer-events: none;
 }
 
-/* Results List */
 .results-list {
   display: flex;
   flex-direction: column;
@@ -820,7 +801,6 @@ export default defineComponent({
   object-fit: cover;
 }
 
-/* Load More */
 .load-more {
   display: flex;
   justify-content: center;
@@ -851,7 +831,6 @@ export default defineComponent({
   opacity: 0.6;
 }
 
-/* No Results */
 .no-results {
   text-align: center;
   padding: 60px 20px;
@@ -875,7 +854,6 @@ export default defineComponent({
   color: var(--text-muted);
 }
 
-/* Recommend Section */
 .recommend-section {
   margin-top: 40px;
 }
@@ -890,7 +868,7 @@ export default defineComponent({
   .main-grid {
     flex-direction: column;
   }
-  
+
   .recommend-grid {
     grid-template-columns: 1fr;
   }
@@ -902,25 +880,25 @@ export default defineComponent({
     padding: 16px;
     border-radius: 16px;
   }
-  
+
   .search-box-large input {
     width: 100%;
     text-align: center;
   }
-  
+
   .search-btn {
     width: 100%;
   }
-  
+
   .filter-bar {
     flex-direction: column;
     gap: 16px;
   }
-  
+
   .result-content {
     flex-direction: column-reverse;
   }
-  
+
   .result-cover {
     width: 100%;
     height: 160px;

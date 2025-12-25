@@ -1,12 +1,11 @@
 <template>
   <aside class="blog-sidebar">
-    <!-- 作者信息卡片 -->
     <div v-if="showAuthorCard" class="sidebar-card author-card">
       <div class="author-header">
         <img src="@/assets/blog/images/user.jpg" alt="头像" class="author-avatar" />
         <div class="author-info">
-          <h3 class="author-name">CloudStack用户</h3>
-          <p class="author-bio">专注技术分享与学习</p>
+          <h3 class="author-name">CloudStack管理员</h3>
+          <p class="author-bio">管理内容 · 监控趋势</p>
         </div>
       </div>
       <div class="author-stats">
@@ -28,8 +27,7 @@
         <span>关注</span>
       </button>
     </div>
-    
-    <!-- 热门标签 -->
+
     <div class="sidebar-card">
       <div class="card-header">
         <img src="@/assets/blog/icons/trending.svg" alt="热门标签" class="header-icon" />
@@ -42,8 +40,7 @@
         </span>
       </div>
     </div>
-    
-    <!-- 热门文章 -->
+
     <div class="sidebar-card">
       <div class="card-header">
         <img src="@/assets/blog/icons/zap.svg" alt="热门文章" class="header-icon" />
@@ -51,7 +48,7 @@
       </div>
       <ul class="hot-posts">
         <li v-for="(post, index) in hotPosts" :key="post.id" class="hot-post-item">
-          <span class="post-rank" :class="{ 'top': index < 3 }">{{ index + 1 }}</span>
+          <span class="post-rank" :class="{ top: index < 3 }">{{ index + 1 }}</span>
           <div class="post-info">
             <router-link :to="`${postRouteBase}/${post.id}`" class="post-title">{{ post.title }}</router-link>
             <span class="post-views">
@@ -62,8 +59,7 @@
         </li>
       </ul>
     </div>
-    
-    <!-- 文章归档 -->
+
     <div v-if="showArchive" class="sidebar-card">
       <div class="card-header">
         <img src="@/assets/blog/icons/book.svg" alt="文章归档" class="header-icon" />
@@ -78,8 +74,7 @@
         </li>
       </ul>
     </div>
-    
-    <!-- 友情链接 -->
+
     <div class="sidebar-card">
       <div class="card-header">
         <img src="@/assets/blog/icons/share.svg" alt="友情链接" class="header-icon" />
@@ -100,23 +95,23 @@ import { useRouter } from 'vue-router'
 import { blogService, type PostListItem, type Tag } from '@/services/blogService'
 
 export default defineComponent({
-  name: 'BlogSidebar',
+  name: 'AdminBlogSidebar',
   props: {
     showAuthorCard: {
       type: Boolean,
-      default: true
+      default: false
     },
     showArchive: {
       type: Boolean,
-      default: true
+      default: false
     },
     postRouteBase: {
       type: String,
-      default: '/blog/post'
+      default: '/admin/blog/post'
     },
     tagRoutePath: {
       type: String,
-      default: '/blog/search'
+      default: '/admin/blog/search'
     },
     tagQueryKey: {
       type: String,
@@ -125,9 +120,8 @@ export default defineComponent({
   },
   setup(props) {
     const router = useRouter()
-    
+
     const hotTags = ref<Array<{ name: string; count: number }>>([])
-    
     const hotPosts = ref<Array<{ id: number; title: string; views: string }>>([])
 
     const formatCount = (count: number) => {
@@ -178,7 +172,7 @@ export default defineComponent({
         ]
       }
     }
-    
+
     const archives = ref([
       { month: '2025-12', label: '2025年12月', count: 12 },
       { month: '2025-11', label: '2025年11月', count: 18 },
@@ -186,27 +180,27 @@ export default defineComponent({
       { month: '2025-09', label: '2025年9月', count: 22 },
       { month: '2025-08', label: '2025年8月', count: 16 }
     ])
-    
+
     const friendLinks = ref([
       { name: 'CloudStack Pro', url: '#' },
       { name: 'GitHub', url: 'https://github.com' },
       { name: 'Vue.js', url: 'https://vuejs.org' },
       { name: 'MDN Web Docs', url: 'https://developer.mozilla.org' }
     ])
-    
+
     const handleTagClick = (tagName: string) => {
       router.push({ path: props.tagRoutePath, query: { [props.tagQueryKey]: tagName } })
     }
 
     const archiveTo = (month: string) => {
-      return `/archive/${month}`
+      return `/admin/blog/archive/${month}`
     }
 
     onMounted(() => {
       loadHotTags()
       loadHotPosts()
     })
-    
+
     return {
       hotTags,
       hotPosts,
@@ -235,7 +229,6 @@ export default defineComponent({
   box-shadow: var(--shadow-sm);
 }
 
-/* 作者卡片 */
 .author-card {
   text-align: center;
 }
@@ -320,7 +313,6 @@ export default defineComponent({
   filter: brightness(0) invert(1);
 }
 
-/* 通用卡片头部 */
 .card-header {
   display: flex;
   align-items: center;
@@ -342,7 +334,6 @@ export default defineComponent({
   color: var(--text-dark);
 }
 
-/* 热门标签 */
 .tags-list {
   display: flex;
   flex-wrap: wrap;
@@ -372,7 +363,6 @@ export default defineComponent({
   color: var(--text-muted);
 }
 
-/* 热门文章 */
 .hot-posts {
   display: flex;
   flex-direction: column;
@@ -438,7 +428,6 @@ export default defineComponent({
   opacity: 0.5;
 }
 
-/* 文章归档 */
 .archive-list {
   display: flex;
   flex-direction: column;
@@ -471,7 +460,6 @@ export default defineComponent({
   color: var(--text-muted);
 }
 
-/* 友情链接 */
 .friend-links {
   display: flex;
   flex-wrap: wrap;

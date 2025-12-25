@@ -96,9 +96,10 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, ref, computed } from 'vue'
+import { defineComponent, ref, watch, onMounted, onBeforeUnmount } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { userService } from '@/services/userService'
+import { blogService } from '@/services/blogService'
 
 export default defineComponent({
   name: 'AdminHeader',
@@ -115,6 +116,68 @@ export default defineComponent({
     const searchQuery = ref('')
     const showUserMenu = ref(false)
     const showMobileMenu = ref(false)
+    const avatarSrc = ref(
+      props.avatar ||
+        (localStorage.getItem('blog_user') ? JSON.parse(localStorage.getItem('blog_user') || '{}').avatar : '') ||
+        localStorage.getItem('avatar') ||
+        'https://api.dicebear.com/7.x/avataaars/svg?seed=admin'
+    )
+
+    const refreshAvatar = (custom?: string) => {
+      avatarSrc.value =
+        custom ||
+        props.avatar ||
+        (localStorage.getItem('blog_user') ? JSON.parse(localStorage.getItem('blog_user') || '{}').avatar : '') ||
+        localStorage.getItem('avatar') ||
+        'https://api.dicebear.com/7.x/avataaars/svg?seed=admin'
+    }
+
+    const handleAvatarEvent = (e: Event) => {
+      const detail = (e as CustomEvent).detail as string | undefined
+      refreshAvatar(detail)
+    }
+
+    const syncFromServer = async () => {
+      try {
+        const res = await blogService.auth.getCurrentUser()
+        if (res?.data) {
+          const user = res.data as any
+          const local = localStorage.getItem('blog_user')
+          const parsed = local ? JSON.parse(local) : {}
+          const next = { ...parsed, ...user }
+          localStorage.setItem('blog_user', JSON.stringify(next))
+          if (user.avatar) {
+            localStorage.setItem('avatar', user.avatar)
+            avatarSrc.value = user.avatar
+          } else {
+            refreshAvatar()
+          }
+        }
+      } catch (e) {
+        // ignore if not logged in
+      }
+    }
+
+    onMounted(() => {
+      refreshAvatar()
+      syncFromServer()
+      window.addEventListener('avatar-updated', handleAvatarEvent)
+      window.addEventListener('storage', handleAvatarEvent)
+    })
+
+    onBeforeUnmount(() => {
+      window.removeEventListener('avatar-updated', handleAvatarEvent)
+      window.removeEventListener('storage', handleAvatarEvent)
+    })
+
+    watch(
+      () => props.avatar,
+      val => {
+        if (val) {
+          avatarSrc.value = val
+        }
+      }
+    )
 
     const isActive = (path: string) => {
       if (path === '/admin') {
@@ -125,7 +188,7 @@ export default defineComponent({
 
     const handleSearch = () => {
       if (searchQuery.value.trim()) {
-        router.push({ path: '/blog/search', query: { q: searchQuery.value } })
+        router.push({ path: '/admin/blog/search', query: { q: searchQuery.value } })
       }
     }
 
@@ -146,8 +209,6 @@ export default defineComponent({
       router.push('/chat')
     }
 
-    const avatar = computed(() => props.avatar || 'https://api.dicebear.com/7.x/avataaars/svg?seed=admin')
-
     return {
       searchQuery,
       showUserMenu,
@@ -158,7 +219,7 @@ export default defineComponent({
       toggleMobileMenu,
       handleLogout,
       goChat,
-      avatar
+      avatar: avatarSrc
     }
   }
 })

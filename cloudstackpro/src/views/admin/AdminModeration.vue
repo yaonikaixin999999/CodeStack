@@ -55,7 +55,7 @@
                       :to="{ path: `/admin/blog/profile/${post.userId}`, query: { from: 'moderation' } }"
                       class="link-user"
                     >
-                      用户 {{ post.userId }}
+                      {{ post.nickname || post.username || `用户 ${post.userId}` }}
                     </router-link>
                     <span v-else>—</span>
                   </td>
@@ -145,13 +145,13 @@ const setError = (msg: string) => {
 
 const goSearchHero = () => {
   if (!heroKeyword.value.trim()) return
-  router.push({ path: '/admin/blog', query: { keyword: heroKeyword.value.trim() } })
+  loadData(heroKeyword.value.trim())
 }
 
-const loadData = async () => {
+const loadData = async (keyword?: string) => {
   try {
     const [postRes, commentRes] = await Promise.all([
-      adminService.listPosts({ status: 2, limit: 50 }),
+      adminService.listPosts({ status: 2, limit: 50, q: keyword }),
       adminService.listComments({ status: 0, limit: 50 })
     ])
     if (postRes.success) pendingPosts.value = postRes.data || []

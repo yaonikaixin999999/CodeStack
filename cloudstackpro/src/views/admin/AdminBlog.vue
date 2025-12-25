@@ -64,12 +64,13 @@
             </div>
 
             <div v-else class="posts-grid">
-              <PostCard
+              <AdminPostCard
                 v-for="(post, index) in displayedPosts"
                 :key="post.id"
                 :post="post"
                 :featured="index === 0"
                 :postRouteBase="postRouteBase"
+                :highlightKeyword="activeKeyword"
                 :canDelete="true"
                 @like="handleLike"
                 @bookmark="handleBookmark"
@@ -86,7 +87,7 @@
             </div>
           </section>
 
-          <BlogSidebar
+          <AdminBlogSidebar
             :showAuthorCard="false"
             :showArchive="false"
             :postRouteBase="postRouteBase"
@@ -103,8 +104,8 @@
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import AdminHeader from '@/components/admin/AdminHeader.vue'
-import BlogSidebar from '@/components/blog/BlogSidebar.vue'
-import PostCard from '@/components/blog/PostCard.vue'
+import AdminBlogSidebar from '@/components/admin/AdminBlogSidebar.vue'
+import AdminPostCard from '@/components/admin/AdminPostCard.vue'
 import { blogService, type Category, type PostListItem } from '@/services/blogService'
 
 import homeIcon from '@/assets/blog/icons/home.svg'
@@ -119,7 +120,7 @@ const route = useRoute()
 const postRouteBase = '/admin/blog/post'
 
 const searchQuery = ref(typeof route.query.keyword === 'string' ? route.query.keyword : '')
-const activeCategory = ref('all')
+const activeCategory = ref(typeof route.query.category === 'string' ? route.query.category : 'all')
 const activeTab = ref(typeof route.query.tab === 'string' ? route.query.tab : 'latest')
 const currentPage = ref(0)
 const totalPages = ref(0)
@@ -144,6 +145,7 @@ const serverCategories = ref<Category[]>([])
 
 const posts = ref<any[]>([])
 const displayedPosts = computed(() => posts.value)
+const activeKeyword = computed(() => searchQuery.value.trim())
 
 const canLoadMore = computed(() => {
   if (loading.value) return false
@@ -201,7 +203,7 @@ const loadCategories = async () => {
 const loadPosts = async () => {
   loading.value = true
   try {
-    const keyword = typeof route.query.keyword === 'string' ? route.query.keyword : ''
+    const keyword = searchQuery.value.trim()
     const tag = typeof route.query.tag === 'string' ? route.query.tag : ''
 
     if (tag) {
@@ -219,11 +221,32 @@ const loadPosts = async () => {
       const response = await blogService.posts.search(keyword, { page: currentPage.value, size: 10 })
       if (response.success && response.data) {
         const pageData = response.data
-        const newPosts = transformPosts(pageData.content || [])
+        const filtered = (pageData.content || []).filter(p => {
+          const kw = keyword.toLowerCase()
+          const title = (p.title || '').toLowerCase()
+          const excerpt = (p.excerpt || '').toLowerCase()
+          return title.includes(kw) || excerpt.includes(kw)
+        })
+        const newPosts = transformPosts(filtered)
         posts.value = currentPage.value === 0 ? newPosts : [...posts.value, ...newPosts]
         totalPages.value = pageData.totalPages
       }
       return
+    }
+
+    if (activeCategory.value !== 'all') {
+      const cat = categories.value.find(c => c.id === activeCategory.value)
+      const targetId = cat?.dbId ?? cat?.id
+      if (targetId) {
+        const catRes = await blogService.categories.getPosts(targetId, currentPage.value, 10)
+        if (catRes.success && catRes.data) {
+          const pageData = catRes.data
+          const newPosts = transformPosts(pageData.content || [])
+          posts.value = currentPage.value === 0 ? newPosts : [...posts.value, ...newPosts]
+          totalPages.value = pageData.totalPages
+        }
+        return
+      }
     }
 
     if (activeTab.value === 'hot') {
@@ -247,11 +270,6 @@ const loadPosts = async () => {
     const params: any = {
       page: currentPage.value,
       size: 10
-    }
-
-    if (activeCategory.value !== 'all') {
-      const cat = categories.value.find(c => c.id === activeCategory.value)
-      if (cat && cat.dbId) params.categoryId = cat.dbId
     }
 
     const response = await blogService.posts.getList(params)
@@ -278,10 +296,19 @@ const handleSearch = () => {
   router.push({ name: 'AdminBlogForward', query: nextQuery })
 }
 
-const setActiveCategory = (categoryId: string) => {
+const setActiveCategory = async (categoryId: string) => {
   activeCategory.value = categoryId
+  searchQuery.value = ''
   currentPage.value = 0
-  loadPosts()
+  const nextQuery: any = { ...route.query }
+  delete nextQuery.keyword
+  delete nextQuery.tag
+  if (activeTab.value === 'latest') delete nextQuery.tab
+  else nextQuery.tab = activeTab.value
+  if (categoryId === 'all') delete nextQuery.category
+  else nextQuery.category = categoryId
+  await router.push({ name: 'AdminBlogForward', query: nextQuery })
+  await loadPosts()
 }
 
 const switchTab = (tabId: string) => {
@@ -359,10 +386,11 @@ const handleDelete = async (postId: number) => {
 }
 
 watch(
-  () => [route.query.keyword, route.query.tag, route.query.tab],
+  () => [route.query.keyword, route.query.tag, route.query.tab, route.query.category],
   async () => {
     searchQuery.value = typeof route.query.keyword === 'string' ? route.query.keyword : ''
     activeTab.value = typeof route.query.tab === 'string' ? route.query.tab : 'latest'
+    activeCategory.value = typeof route.query.category === 'string' ? route.query.category : 'all'
     currentPage.value = 0
     await loadPosts()
   }
