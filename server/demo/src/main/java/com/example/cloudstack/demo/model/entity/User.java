@@ -37,7 +37,7 @@ public class User {
     @Column(length = 50)
     private String nickname;
 
-    @Column(length = 500)
+    @Column(columnDefinition = "MEDIUMTEXT")
     private String avatar;
 
     @Column(columnDefinition = "TEXT")
@@ -64,9 +64,10 @@ public class User {
     @Builder.Default
     private String role = "user";
 
-    @Column(name = "is_admin", columnDefinition = "TINYINT(1) DEFAULT 0")
-    @Builder.Default
-    private Boolean isAdmin = false;
+    @Transient
+    public Boolean getIsAdmin() {
+        return "admin".equalsIgnoreCase(role);
+    }
 
     @Column(name = "last_login_at")
     private LocalDateTime lastLoginAt;

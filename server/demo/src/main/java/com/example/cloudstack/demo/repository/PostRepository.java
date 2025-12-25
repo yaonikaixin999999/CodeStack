@@ -10,6 +10,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.time.LocalDateTime;
 import java.util.Optional;
 
 /**
@@ -32,8 +33,33 @@ public interface PostRepository extends JpaRepository<Post, Long> {
     Page<Post> findByCategoryId(@Param("categoryId") Long categoryId, Pageable pageable);
 
     // 搜索文章
-    @Query("SELECT p FROM Post p WHERE (p.title LIKE %:keyword% OR p.excerpt LIKE %:keyword%) AND p.status = 1 AND p.deletedAt IS NULL")
+    @Query("""
+            SELECT p FROM Post p
+            WHERE (p.title LIKE %:keyword%
+                OR p.excerpt LIKE %:keyword%
+                OR p.content LIKE %:keyword%
+                OR p.contentHtml LIKE %:keyword%)
+              AND p.status = 1
+              AND p.deletedAt IS NULL
+            """)
     Page<Post> searchPosts(@Param("keyword") String keyword, Pageable pageable);
+
+    @Query("""
+            SELECT p FROM Post p
+            WHERE (p.title LIKE %:keyword%
+                OR p.excerpt LIKE %:keyword%
+                OR p.content LIKE %:keyword%
+                OR p.contentHtml LIKE %:keyword%)
+              AND p.deletedAt IS NULL
+              AND (
+                    p.status = 1
+                 OR (p.status = 2 AND (:isAdmin = true OR p.userId = :userId))
+              )
+            """)
+    Page<Post> searchPostsForGlobal(@Param("keyword") String keyword,
+                                    @Param("userId") Long userId,
+                                    @Param("isAdmin") boolean isAdmin,
+                                    Pageable pageable);
 
     // 查询精选文章
     @Query("SELECT p FROM Post p WHERE p.isFeatured = true AND p.status = 1 AND p.deletedAt IS NULL ORDER BY p.publishedAt DESC")
@@ -74,4 +100,13 @@ public interface PostRepository extends JpaRepository<Post, Long> {
     // 根据标签查询文章
     @Query("SELECT DISTINCT p FROM Post p JOIN p.tags t WHERE t.id = :tagId AND p.status = 1 AND p.deletedAt IS NULL")
     Page<Post> findByTagId(@Param("tagId") Long tagId, Pageable pageable);
+
+    List<Post> findByStatusAndPublishedAtAfter(Integer status, LocalDateTime publishedAt);
+
+    @Query("SELECT p.categoryId, COUNT(p) FROM Post p WHERE p.deletedAt IS NULL AND p.categoryId IS NOT NULL GROUP BY p.categoryId")
+    List<Object[]> countPostsByCategory();
+
+    @Modifying
+    @Query("UPDATE Post p SET p.status = 3 WHERE p.userId = :userId AND p.status = 2")
+    int rejectPendingByUserId(@Param("userId") Long userId);
 }

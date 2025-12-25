@@ -1,8 +1,12 @@
 <template>
   <div class="blog-profile">
-    <BlogHeader />
-    
     <main class="main-content">
+      <div class="profile-topbar">
+        <button class="back-btn" @click="goBack">
+          <img src="@/assets/blog/icons/chevron-left.svg" alt="返回" class="back-icon" />
+          返回
+        </button>
+      </div>
       <!-- 用户信息卡片 -->
       <header class="profile-header">
         <div class="header-bg">
@@ -10,7 +14,7 @@
         </div>
         <div class="header-content">
           <div class="user-avatar-wrapper">
-            <img src="@/assets/blog/images/user.jpg" :alt="userInfo.name" class="user-avatar" />
+            <img :src="userInfo.avatar" :alt="userInfo.name" class="user-avatar" />
             <span class="user-level">Lv.{{ userInfo.level }}</span>
           </div>
           <div class="user-info">
@@ -45,10 +49,6 @@
             </button>
           </div>
           <div class="user-actions" v-else>
-            <router-link to="/profile/edit" class="action-btn">
-              <img src="@/assets/blog/icons/edit.svg" alt="编辑" class="btn-icon" />
-              编辑资料
-            </router-link>
             <router-link to="/profile/settings" class="action-btn">
               <img src="@/assets/blog/icons/settings.svg" alt="设置" class="btn-icon" />
               设置
@@ -171,7 +171,12 @@
                   <p class="user-card-bio">{{ user.bio }}</p>
                   <span class="user-card-followers">{{ user.followers }} 粉丝</span>
                 </div>
-                <button class="follow-btn" :class="{ followed: user.isFollowed }">
+                <button
+                  class="follow-btn"
+                  :class="{ followed: user.isFollowed }"
+                  :disabled="followLoadingIds.has(user.id)"
+                  @click="toggleFollowUser(user, 'following')"
+                >
                   {{ user.isFollowed ? '已关注' : '关注' }}
                 </button>
               </div>
@@ -186,7 +191,12 @@
                   <p class="user-card-bio">{{ user.bio }}</p>
                   <span class="user-card-followers">{{ user.followers }} 粉丝</span>
                 </div>
-                <button class="follow-btn" :class="{ followed: user.isFollowed }">
+                <button
+                  class="follow-btn"
+                  :class="{ followed: user.isFollowed }"
+                  :disabled="followLoadingIds.has(user.id)"
+                  @click="toggleFollowUser(user, 'followers')"
+                >
                   {{ user.isFollowed ? '已关注' : '关注' }}
                 </button>
               </div>
@@ -272,7 +282,6 @@ import iconWriter from '@/assets/blog/icons/icons8-作者-100.png'
 export default defineComponent({
   name: 'BlogProfile',
   components: {
-    BlogHeader,
     BlogFooter
   },
   setup() {
@@ -284,6 +293,7 @@ export default defineComponent({
     const isFollowed = ref(false)
     const activeTab = ref('posts')
     const currentUser = ref(blogService.auth.getLocalUser())
+    const followLoadingIds = ref<Set<number>>(new Set())
     
     const userInfo = ref({
       id: 0,
@@ -294,6 +304,7 @@ export default defineComponent({
       bio: '全栈开发工程师，热爱技术分享。',
       profession: '全栈工程师',
       location: '北京',
+      website: '',
       joinDate: '2023-01',
       stats: {
         posts: 0,
@@ -340,7 +351,9 @@ export default defineComponent({
     
     // 加载用户信息
     const loadUserProfile = async () => {
-      const userId = route.params.id as string
+      const rawQueryId = route.query.id
+      const queryId = Array.isArray(rawQueryId) ? rawQueryId[0] : rawQueryId
+      const userId = (route.params.id as string) || (queryId as string) || ''
       loading.value = true
       
       try {
@@ -352,6 +365,7 @@ export default defineComponent({
           if (response.success && response.data) {
             const user = response.data
             updateUserInfo(user)
+            isFollowed.value = !!(user as any).followed || !!(user as any).isFollowed
           }
         } else if (currentUser.value) {
           // 查看自己的个人主页
@@ -363,6 +377,7 @@ export default defineComponent({
           } else {
             updateUserInfo(currentUser.value)
           }
+          isFollowed.value = false
         }
       } catch (error) {
         console.error('加载用户信息失败:', error)
@@ -374,7 +389,15 @@ export default defineComponent({
         loading.value = false
       }
     }
-    
+
+    const goBack = () => {
+      if (window.history.length > 1) {
+        router.back()
+        return
+      }
+      router.push('/blog')
+    }
+
     // 更新用户信息
     const updateUserInfo = (user: any) => {
       userInfo.value = {
@@ -386,6 +409,7 @@ export default defineComponent({
         bio: user.bio || '这个人很懒，什么都没有留下。',
         profession: user.profession || '开发者',
         location: user.location || '未知',
+        website: user.website || '',
         joinDate: formatJoinDate(user.createdAt),
         stats: {
           posts: user.postCount || 0,
@@ -466,17 +490,26 @@ export default defineComponent({
       try {
         const response = await blogService.bookmarks.getList()
         if (response.success && response.data) {
-          bookmarks.value = response.data.content.map((item: any) => ({
-            id: item.post?.id,
-            title: item.post?.title || '',
-            excerpt: item.post?.excerpt || '',
-            coverImage: item.post?.coverImage || '',
-            author: {
-              name: item.post?.author?.nickname || item.post?.author?.username || '匿名',
-              avatar: item.post?.author?.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${item.post?.author?.id || 1}`
-            },
-            bookmarkedAt: formatDate(item.createdAt || '')
-          }))
+          const rawList = response.data.content || response.data || []
+          const items = rawList
+            .map((item: any) => {
+              const post = item?.post || item
+              if (!post) return null
+              return {
+                id: post.id,
+                title: post.title || '',
+                excerpt: post.excerpt || '',
+                coverImage: post.coverImage || '',
+                author: {
+                  name: post.author?.nickname || post.author?.username || '匿名',
+                  avatar: post.author?.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${post.author?.id || 1}`
+                },
+                bookmarkedAt: formatDate(item?.createdAt || post.publishedAt || post.createdAt || '')
+              }
+            })
+            .filter(Boolean)
+          bookmarks.value = items as any[]
+          contentTabs.value[1].count = response.data.totalElements ?? items.length
         }
       } catch (error) {
         console.error('加载收藏列表失败:', error)
@@ -497,7 +530,7 @@ export default defineComponent({
             avatar: user.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.id}`,
             bio: user.bio || '这个人很懒',
             followers: formatCount(user.followerCount || 0),
-            isFollowed: true
+            isFollowed: isOwner.value ? true : !!(user as any).followed
           }))
         }
       } catch (error) {
@@ -548,20 +581,85 @@ export default defineComponent({
       }
     ]
     
+    const parseCountValue = (value: string | number) => {
+      if (typeof value === 'number') return value
+      if (!value) return 0
+      const raw = String(value).trim().toLowerCase()
+      if (raw.endsWith('w')) {
+        const num = Number(raw.replace('w', ''))
+        return Number.isNaN(num) ? 0 : Math.round(num * 10000)
+      }
+      if (raw.endsWith('k')) {
+        const num = Number(raw.replace('k', ''))
+        return Number.isNaN(num) ? 0 : Math.round(num * 1000)
+      }
+      const num = Number(raw)
+      return Number.isNaN(num) ? 0 : num
+    }
+
+    const updateTabCount = (index: number, delta: number) => {
+      const current = parseCountValue(contentTabs.value[index]?.count ?? 0)
+      const next = Math.max(0, current + delta)
+      contentTabs.value[index].count = next
+    }
+
+    const updateFollowersStat = (delta: number) => {
+      const current = parseCountValue(userInfo.value.stats.followers)
+      const next = Math.max(0, current + delta)
+      userInfo.value.stats.followers = formatCount(next)
+      updateTabCount(3, delta)
+    }
+
+    const updateFollowingStat = (delta: number) => {
+      const current = parseCountValue(userInfo.value.stats.following as any)
+      const next = Math.max(0, current + delta)
+      userInfo.value.stats.following = next
+      updateTabCount(2, delta)
+    }
+
     const toggleFollow = async () => {
       try {
         if (isFollowed.value) {
           await blogService.users.unfollow(userInfo.value.id)
           isFollowed.value = false
+          updateFollowersStat(-1)
         } else {
           await blogService.users.follow(userInfo.value.id)
           isFollowed.value = true
+          updateFollowersStat(1)
         }
       } catch (error) {
         console.error('关注操作失败:', error)
-        isFollowed.value = !isFollowed.value
       }
     }
+
+    const toggleFollowUser = async (user: any, listType: 'following' | 'followers') => {
+      if (!user?.id || followLoadingIds.value.has(user.id)) return
+      followLoadingIds.value.add(user.id)
+      try {
+        if (user.isFollowed) {
+          await blogService.users.unfollow(user.id)
+          user.isFollowed = false
+          if (isOwner.value) {
+            updateFollowingStat(-1)
+            if (listType === 'following') {
+              following.value = following.value.filter(item => item.id !== user.id)
+            }
+          }
+        } else {
+          await blogService.users.follow(user.id)
+          user.isFollowed = true
+          if (isOwner.value) {
+            updateFollowingStat(1)
+          }
+        }
+      } catch (error) {
+        console.error('关注操作失败:', error)
+      } finally {
+        followLoadingIds.value.delete(user.id)
+      }
+    }
+
     
     // 发送私信
     const sendMessage = () => {
@@ -608,9 +706,12 @@ export default defineComponent({
       skills,
       tags,
       toggleFollow,
+      toggleFollowUser,
+      followLoadingIds,
       sendMessage,
       plusIcon,
-      checkIcon
+      checkIcon,
+      goBack
     }
   }
 })
@@ -623,7 +724,38 @@ export default defineComponent({
 }
 
 .main-content {
-  padding-top: 64px;
+  padding-top: 0;
+}
+
+.profile-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  padding: 12px 24px;
+  background: rgba(255, 255, 255, 0.9);
+  border-bottom: 1px solid rgba(226, 232, 240, 0.7);
+  backdrop-filter: blur(10px);
+}
+
+.back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: #ffffff;
+  border: 1px solid rgba(226, 232, 240, 0.8);
+  box-shadow: var(--shadow-sm);
+  color: var(--text-dark);
+  cursor: pointer;
+}
+
+.back-icon {
+  width: 16px;
+  height: 16px;
+  opacity: 0.6;
 }
 
 .content-container {
@@ -754,6 +886,8 @@ export default defineComponent({
   color: var(--text-light);
   border-radius: 24px;
   font-size: 14px;
+  border: none;
+  cursor: pointer;
   box-shadow: var(--shadow-sm);
   transition: var(--transition-default);
 }
@@ -1024,6 +1158,8 @@ export default defineComponent({
   color: white;
   border-radius: 20px;
   font-size: 13px;
+  border: none;
+  cursor: pointer;
   transition: var(--transition-default);
 }
 
@@ -1035,6 +1171,12 @@ export default defineComponent({
   background: var(--border-light);
   color: var(--text-muted);
 }
+
+.follow-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 
 /* Profile Sidebar */
 .profile-sidebar {

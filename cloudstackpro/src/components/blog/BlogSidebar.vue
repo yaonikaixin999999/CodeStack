@@ -1,7 +1,7 @@
 <template>
   <aside class="blog-sidebar">
     <!-- 作者信息卡片 -->
-    <div class="sidebar-card author-card">
+    <div v-if="showAuthorCard" class="sidebar-card author-card">
       <div class="author-header">
         <img src="@/assets/blog/images/user.jpg" alt="头像" class="author-avatar" />
         <div class="author-info">
@@ -53,7 +53,7 @@
         <li v-for="(post, index) in hotPosts" :key="post.id" class="hot-post-item">
           <span class="post-rank" :class="{ 'top': index < 3 }">{{ index + 1 }}</span>
           <div class="post-info">
-            <router-link :to="`/blog/post/${post.id}`" class="post-title">{{ post.title }}</router-link>
+            <router-link :to="`${postRouteBase}/${post.id}`" class="post-title">{{ post.title }}</router-link>
             <span class="post-views">
               <img src="@/assets/blog/icons/eye.svg" alt="阅读" class="view-icon" />
               {{ post.views }}
@@ -64,14 +64,14 @@
     </div>
     
     <!-- 文章归档 -->
-    <div class="sidebar-card">
+    <div v-if="showArchive" class="sidebar-card">
       <div class="card-header">
         <img src="@/assets/blog/icons/book.svg" alt="文章归档" class="header-icon" />
         <h3 class="card-title">文章归档</h3>
       </div>
       <ul class="archive-list">
         <li v-for="archive in archives" :key="archive.month" class="archive-item">
-          <router-link :to="`/archive/${archive.month}`" class="archive-link">
+          <router-link :to="archiveTo(archive.month)" class="archive-link">
             <span class="archive-month">{{ archive.label }}</span>
             <span class="archive-count">{{ archive.count }}篇</span>
           </router-link>
@@ -95,32 +95,89 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, ref } from 'vue'
+import { defineComponent, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { blogService, type PostListItem, type Tag } from '@/services/blogService'
 
 export default defineComponent({
   name: 'BlogSidebar',
-  setup() {
+  props: {
+    showAuthorCard: {
+      type: Boolean,
+      default: true
+    },
+    showArchive: {
+      type: Boolean,
+      default: true
+    },
+    postRouteBase: {
+      type: String,
+      default: '/blog/post'
+    },
+    tagRoutePath: {
+      type: String,
+      default: '/blog/search'
+    },
+    tagQueryKey: {
+      type: String,
+      default: 'tag'
+    }
+  },
+  setup(props) {
     const router = useRouter()
     
-    const hotTags = ref([
-      { name: 'Vue.js', count: 128 },
-      { name: 'TypeScript', count: 96 },
-      { name: 'React', count: 87 },
-      { name: 'Node.js', count: 76 },
-      { name: 'Python', count: 65 },
-      { name: '前端开发', count: 54 },
-      { name: '后端开发', count: 48 },
-      { name: '人工智能', count: 42 }
-    ])
+    const hotTags = ref<Array<{ name: string; count: number }>>([])
     
-    const hotPosts = ref([
-      { id: 1, title: 'Vue 3.0 新特性详解与实践指南', views: '2.3k' },
-      { id: 2, title: 'TypeScript 高级类型系统深入理解', views: '1.8k' },
-      { id: 3, title: '前端性能优化的20个实用技巧', views: '1.5k' },
-      { id: 4, title: 'Node.js 微服务架构设计实践', views: '1.2k' },
-      { id: 5, title: 'React Hooks 最佳实践总结', views: '980' }
-    ])
+    const hotPosts = ref<Array<{ id: number; title: string; views: string }>>([])
+
+    const formatCount = (count: number) => {
+      if (count >= 1000) return (count / 1000).toFixed(1) + 'k'
+      return String(count)
+    }
+
+    const loadHotTags = async () => {
+      try {
+        const res = await blogService.tags.getHot(8)
+        if (res.success && res.data) {
+          hotTags.value = (res.data as Tag[]).map(t => ({
+            name: t.name,
+            count: t.postCount || 0
+          }))
+        }
+      } catch (e) {
+        hotTags.value = [
+          { name: 'Vue.js', count: 128 },
+          { name: 'TypeScript', count: 96 },
+          { name: 'React', count: 87 },
+          { name: 'Node.js', count: 76 },
+          { name: 'Python', count: 65 },
+          { name: '前端开发', count: 54 },
+          { name: '后端开发', count: 48 },
+          { name: '人工智能', count: 42 }
+        ]
+      }
+    }
+
+    const loadHotPosts = async () => {
+      try {
+        const res = await blogService.posts.getHot(5)
+        if (res.success && res.data) {
+          hotPosts.value = (res.data as PostListItem[]).map(p => ({
+            id: p.id,
+            title: p.title,
+            views: formatCount(p.viewCount || 0)
+          }))
+        }
+      } catch (e) {
+        hotPosts.value = [
+          { id: 1, title: 'Vue 3.0 新特性详解与实践指南', views: '2.3k' },
+          { id: 2, title: 'TypeScript 高级类型系统深入理解', views: '1.8k' },
+          { id: 3, title: '前端性能优化的20个实用技巧', views: '1.5k' },
+          { id: 4, title: 'Node.js 微服务架构设计实践', views: '1.2k' },
+          { id: 5, title: 'React Hooks 最佳实践总结', views: '980' }
+        ]
+      }
+    }
     
     const archives = ref([
       { month: '2025-12', label: '2025年12月', count: 12 },
@@ -138,15 +195,25 @@ export default defineComponent({
     ])
     
     const handleTagClick = (tagName: string) => {
-      router.push({ path: '/blog/search', query: { tag: tagName } })
+      router.push({ path: props.tagRoutePath, query: { [props.tagQueryKey]: tagName } })
     }
+
+    const archiveTo = (month: string) => {
+      return `/archive/${month}`
+    }
+
+    onMounted(() => {
+      loadHotTags()
+      loadHotPosts()
+    })
     
     return {
       hotTags,
       hotPosts,
       archives,
       friendLinks,
-      handleTagClick
+      handleTagClick,
+      archiveTo
     }
   }
 })

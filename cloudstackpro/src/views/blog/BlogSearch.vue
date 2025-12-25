@@ -79,8 +79,18 @@
               <article v-for="result in searchResults" :key="result.id" class="result-item">
                 <router-link :to="`/blog/post/${result.id}`" class="result-content">
                   <div class="result-main">
-                    <h3 class="result-title" v-html="highlightText(result.title)"></h3>
-                    <p class="result-excerpt" v-html="highlightText(result.excerpt)"></p>
+                    <h3 class="result-title">
+                      <template v-for="(part, idx) in getHighlightParts(result.title)" :key="idx">
+                        <mark v-if="part.highlight">{{ part.text }}</mark>
+                        <span v-else>{{ part.text }}</span>
+                      </template>
+                    </h3>
+                    <p class="result-excerpt">
+                      <template v-for="(part, idx) in getHighlightParts(result.excerpt)" :key="idx">
+                        <mark v-if="part.highlight">{{ part.text }}</mark>
+                        <span v-else>{{ part.text }}</span>
+                      </template>
+                    </p>
                     <div class="result-meta">
                       <span class="meta-item">
                         <img :src="result.author.avatar" :alt="result.author.name" class="author-avatar" />
@@ -274,8 +284,9 @@ export default defineComponent({
         }
       } catch (error) {
         console.error('搜索失败:', error)
-        searchResults.value = getDefaultSearchResults()
-        totalResults.value = searchResults.value.length
+        searchResults.value = []  // 搜索失败时返回空数组，不显示默认结果
+        totalResults.value = 0
+        hasMore.value = false
       } finally {
         searchTime.value = Date.now() - startTime
         loading.value = false
@@ -369,10 +380,42 @@ export default defineComponent({
       return count.toString()
     }
     
-    const highlightText = (text: string) => {
-      if (!searchQuery.value) return text
-      const regex = new RegExp(`(${searchQuery.value})`, 'gi')
-      return text.replace(regex, '<mark>$1</mark>')
+    const escapeRegExp = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+
+    type HighlightPart = { text: string; highlight: boolean }
+
+    const getHighlightParts = (text: string): HighlightPart[] => {
+      const input = text ?? ''
+      const keyword = searchQuery.value.trim()
+      if (!keyword) return [{ text: input, highlight: false }]
+
+      const keywords = Array.from(new Set(keyword.split(/\s+/).map(k => k.trim()).filter(Boolean)))
+      if (keywords.length === 0) return [{ text: input, highlight: false }]
+
+      const regex = new RegExp(`(${keywords.map(escapeRegExp).join('|')})`, 'gi')
+      const parts: HighlightPart[] = []
+      let lastIndex = 0
+
+      for (const match of input.matchAll(regex)) {
+        const index = match.index ?? 0
+        if (index > lastIndex) {
+          parts.push({ text: input.slice(lastIndex, index), highlight: false })
+        }
+
+        const matchedText = match[0]
+        if (matchedText) {
+          parts.push({ text: matchedText, highlight: true })
+        }
+
+        lastIndex = index + matchedText.length
+      }
+
+      if (lastIndex < input.length) {
+        parts.push({ text: input.slice(lastIndex), highlight: false })
+      }
+
+      if (parts.length === 0) return [{ text: input, highlight: false }]
+      return parts
     }
     
     // 默认搜索结果
@@ -444,7 +487,7 @@ export default defineComponent({
       hasMore,
       performSearch,
       searchByTag,
-      highlightText,
+      getHighlightParts,
       loadMore
     }
   }
@@ -714,11 +757,12 @@ export default defineComponent({
   line-height: 1.5;
 }
 
-.result-title :deep(mark) {
-  background: rgba(58, 156, 255, 0.2);
-  color: var(--primary-color);
+.result-title mark {
+  background: rgba(58, 156, 255, 0.2) !important;
+  color: var(--primary-color) !important;
   padding: 0 2px;
   border-radius: 2px;
+  font-weight: 600;
 }
 
 .result-excerpt {
@@ -728,11 +772,12 @@ export default defineComponent({
   margin-bottom: 12px;
 }
 
-.result-excerpt :deep(mark) {
-  background: rgba(58, 156, 255, 0.2);
-  color: var(--primary-color);
+.result-excerpt mark {
+  background: rgba(58, 156, 255, 0.2) !important;
+  color: var(--primary-color) !important;
   padding: 0 2px;
   border-radius: 2px;
+  font-weight: 500;
 }
 
 .result-meta {

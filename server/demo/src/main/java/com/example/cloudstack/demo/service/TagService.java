@@ -33,8 +33,26 @@ public class TagService {
      * 获取热门标签
      */
     public List<TagDTO> getHotTags(int limit) {
-        return tagRepository.findHotTags(PageRequest.of(0, limit)).stream()
-                .map(this::convertToDTO)
+        return tagRepository.findHotTagsWithPostCount(PageRequest.of(0, limit)).stream()
+                .map(row -> {
+                    Tag tag = row != null && row.length > 0 ? (Tag) row[0] : null;
+                    long count = 0L;
+                    if (row != null && row.length > 1 && row[1] instanceof Number) {
+                        count = ((Number) row[1]).longValue();
+                    }
+                    if (tag == null) {
+                        return null;
+                    }
+                    return TagDTO.builder()
+                            .id(tag.getId())
+                            .name(tag.getName())
+                            .slug(tag.getSlug())
+                            .description(tag.getDescription())
+                            .color(tag.getColor())
+                            .postCount((int) Math.min(Integer.MAX_VALUE, Math.max(0L, count)))
+                            .build();
+                })
+                .filter(dto -> dto != null)
                 .collect(Collectors.toList());
     }
 

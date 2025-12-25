@@ -27,6 +27,7 @@ public class PostListDTO {
     private Integer commentCount;
     private Boolean isTop;
     private Boolean isFeatured;
+    private Integer status;
     private LocalDateTime publishedAt;
     private LocalDateTime createdAt;
 

@@ -54,9 +54,10 @@ public class PostService {
                 .readTime(calculateReadTime(request.getContent()))
                 .build();
 
-        // 如果是发布状态，设置发布时间
+        // 如果是发布状态，设置发布时间并将状态改为已发布(2)
         if (request.getStatus() == 1) {
             post.setPublishedAt(LocalDateTime.now());
+            post.setStatus(2); // 1表示请求发布，2表示已发布
         }
 
         post = postRepository.save(post);
@@ -100,7 +101,7 @@ public class PostService {
 
         // 草稿 -> 发布
         if (post.getStatus() == 0 && request.getStatus() == 1) {
-            post.setStatus(1);
+            post.setStatus(2);
             post.setPublishedAt(LocalDateTime.now());
         } else if (request.getStatus() != null) {
             post.setStatus(request.getStatus());
@@ -129,14 +130,17 @@ public class PostService {
      * 删除文章(软删除)
      */
     @Transactional
-    public void deletePost(Long postId, Long userId) {
+    public void deletePost(Long postId, Long userId, boolean isAdmin) {
         Post post = postRepository.findById(postId)
                 .orElseThrow(() -> new RuntimeException("文章不存在"));
 
         // 检查权限
-        if (!post.getUserId().equals(userId)) {
+        if (!isAdmin && !post.getUserId().equals(userId)) {
             throw new RuntimeException("无权删除此文章");
         }
+
+        // 设置状态
+        post.setStatus(3);
 
         post.setDeletedAt(LocalDateTime.now());
         postRepository.save(post);
@@ -192,6 +196,7 @@ public class PostService {
             Long authorId, String keyword, String sort, Long currentUserId) {
         Page<Post> posts;
         PageRequest pageRequest = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
+        String safeKeyword = keyword != null ? keyword.trim() : null;
 
         // 根据排序参数调整
         if (sort != null && !sort.isEmpty()) {
@@ -210,8 +215,8 @@ public class PostService {
             posts = postRepository.findByTagId(tagId, pageRequest);
         } else if (authorId != null) {
             posts = postRepository.findByUserIdAndDeletedAtIsNull(authorId, pageRequest);
-        } else if (keyword != null && !keyword.isEmpty()) {
-            posts = postRepository.searchPosts(keyword, pageRequest);
+        } else if (safeKeyword != null && !safeKeyword.isEmpty()) {
+            posts = postRepository.searchPosts(safeKeyword, pageRequest);
         } else {
             posts = postRepository.findPublishedPosts(pageRequest);
         }
@@ -277,7 +282,30 @@ public class PostService {
      * 搜索文章
      */
     public PageResponse<PostListDTO> searchPosts(String keyword, int page, int size, Long currentUserId) {
-        Page<Post> posts = postRepository.searchPosts(keyword, PageRequest.of(page, size));
+        String safeKeyword = keyword != null ? keyword.trim() : "";
+        if (safeKeyword.isEmpty()) {
+            return PageResponse.of(List.of(), page, size, 0);
+        }
+
+        Page<Post> posts = postRepository.searchPosts(safeKeyword, PageRequest.of(page, size));
+
+        List<PostListDTO> postDTOs = posts.getContent().stream()
+                .map(this::convertToListDTO)
+                .collect(Collectors.toList());
+
+        return PageResponse.of(postDTOs, page, size, posts.getTotalElements());
+    }
+
+    public PageResponse<PostListDTO> searchPostsForGlobal(String keyword, int page, int size, Long currentUserId,
+            boolean isAdmin) {
+        String safeKeyword = keyword != null ? keyword.trim() : "";
+        if (safeKeyword.isEmpty()) {
+            return PageResponse.of(List.of(), page, size, 0);
+        }
+
+        long safeUserId = currentUserId != null ? currentUserId : -1L;
+        Page<Post> posts = postRepository.searchPostsForGlobal(safeKeyword, safeUserId, isAdmin,
+                PageRequest.of(page, size));
 
         List<PostListDTO> postDTOs = posts.getContent().stream()
                 .map(this::convertToListDTO)
@@ -461,6 +489,7 @@ public class PostService {
                 .commentCount(post.getCommentCount())
                 .isTop(post.getIsTop())
                 .isFeatured(post.getIsFeatured())
+                .status(post.getStatus())
                 .publishedAt(post.getPublishedAt())
                 .createdAt(post.getCreatedAt())
                 .build();

@@ -26,5 +26,16 @@ public interface TagRepository extends JpaRepository<Tag, Long> {
     @Query("SELECT t FROM Tag t ORDER BY t.postCount DESC")
     List<Tag> findHotTags(Pageable pageable);
 
+    @Query("""
+            SELECT t, COUNT(p)
+            FROM Post p
+            JOIN p.tags t
+            WHERE p.status = 1
+              AND p.deletedAt IS NULL
+            GROUP BY t
+            ORDER BY COUNT(p) DESC
+            """)
+    List<Object[]> findHotTagsWithPostCount(Pageable pageable);
+
     List<Tag> findByNameContaining(String keyword);
 }
