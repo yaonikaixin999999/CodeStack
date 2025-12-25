@@ -5,7 +5,7 @@
   "scripts": {
     "serve": "vue-cli-service serve",
     "build": "vue-cli-service build",
-    "lint": "vue-cli-service lint",
+    "lint": "tsc --noEmit -p tsconfig.json",
     "start": "concurrently \"npm run server\" \"npm run springboot\" \"npm run websocket\" \"npm run front\" --success first",
     "server": "cd ../server/server && npm run dev",
     "springboot": "cd ../server/demo && mvn spring-boot:run",
