@@ -46,11 +46,7 @@
                 </span>
               </div>
               <div class="action-row">
-                <router-link v-if="showOwnerActions" to="/admin/profile/edit" class="btn primary">
-                  <img src="@/assets/blog/icons/edit.svg" alt="编辑" />
-                  编辑资料
-                </router-link>
-                <template v-else-if="showSocialActions">
+                <template v-if="showSocialActions">
                   <button class="btn follow-btn" :class="{ following: isFollowed }" @click="toggleFollowProfile">
                     <img :src="isFollowed ? checkIcon : plusIcon" alt="关注" />
                     {{ isFollowed ? '已关注' : '关注' }}
@@ -274,13 +270,14 @@ export default defineComponent({
       level: 8,
       profession: '内容审核 · 站点运营',
       location: 'Shanghai, CN',
-        joinDate: '2024-03',
-        bio: 'CloudStack Blog 站点管理员，负责内容审核与社区运营。',
-        status: 1,
-        stats: {
-          posts: 128,
-          followers: '2.4k',
-          following: 86,
+      website: '',
+      joinDate: '2024-03',
+      bio: 'CloudStack Blog 站点管理员，负责内容审核与社区运营。',
+      status: 1,
+      stats: {
+        posts: 128,
+        followers: '2.4k',
+        following: 86,
         likes: '8.9k',
         views: '32k'
       }
@@ -461,10 +458,11 @@ export default defineComponent({
         try {
           const bm = await blogService.bookmarks.getList({ page: 0, size: 5 })
           if (bm.success && bm.data) {
-            const items = (bm.data.content || [])
-              .filter(b => b && (b as any).post)
-              .map(b => {
-                const post = (b as any).post
+            const rawList = bm.data.content || bm.data || []
+            const items = rawList
+              .map((item: any) => {
+                const post = item?.post || item
+                if (!post) return null
                 return {
                   id: post.id,
                   title: post.title,
@@ -474,10 +472,11 @@ export default defineComponent({
                     name: post.author?.nickname || post.author?.username || '匿名',
                     avatar: post.author?.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${post.author?.id || 1}`
                   },
-                  bookmarkedAt: formatDate((b as any).createdAt)
+                  bookmarkedAt: formatDate(item?.createdAt || post.publishedAt || post.createdAt)
                 }
               })
-            bookmarks.value = items
+              .filter(Boolean)
+            bookmarks.value = items as any[]
             contentTabs.value[1].count = bm.data.totalElements ?? items.length
           }
         } catch (e) {
@@ -614,6 +613,7 @@ export default defineComponent({
               level: res.data.level || userInfo.value.level,
               profession: res.data.profession || userInfo.value.profession,
               location: res.data.location || userInfo.value.location,
+              website: (res.data as any).website || userInfo.value.website,
               joinDate: res.data.createdAt ? res.data.createdAt.slice(0, 10) : userInfo.value.joinDate,
               bio: res.data.bio || userInfo.value.bio,
               status: (res.data as any).status ?? userInfo.value.status ?? 1,
@@ -645,6 +645,7 @@ export default defineComponent({
               level: selfRes.data.level || userInfo.value.level,
               profession: selfRes.data.profession || userInfo.value.profession,
               location: selfRes.data.location || userInfo.value.location,
+              website: (selfRes.data as any).website || userInfo.value.website,
               joinDate: selfRes.data.createdAt ? selfRes.data.createdAt.slice(0, 10) : userInfo.value.joinDate,
               bio: selfRes.data.bio || userInfo.value.bio,
               status: (selfRes.data as any).status ?? userInfo.value.status ?? 1,
@@ -1011,6 +1012,9 @@ export default defineComponent({
   border-radius: 10px;
   font-size: 14px;
   transition: all 0.2s ease;
+  border: none;
+  background: transparent;
+  cursor: pointer;
 }
 
 .btn img {
@@ -1392,6 +1396,7 @@ export default defineComponent({
   border-radius: 10px;
   font-size: 12px;
 }
+
 
 @media (max-width: 1024px) {
   .info-grid {

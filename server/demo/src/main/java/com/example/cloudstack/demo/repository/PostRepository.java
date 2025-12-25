@@ -105,4 +105,8 @@ public interface PostRepository extends JpaRepository<Post, Long> {
 
     @Query("SELECT p.categoryId, COUNT(p) FROM Post p WHERE p.deletedAt IS NULL AND p.categoryId IS NOT NULL GROUP BY p.categoryId")
     List<Object[]> countPostsByCategory();
+
+    @Modifying
+    @Query("UPDATE Post p SET p.status = 3 WHERE p.userId = :userId AND p.status = 2")
+    int rejectPendingByUserId(@Param("userId") Long userId);
 }

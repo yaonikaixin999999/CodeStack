@@ -289,6 +289,8 @@ public class AdminService {
         User u = userRepository.findById(id).orElseThrow();
         u.setStatus(0);
         userRepository.save(u);
+        // 拒绝该用户所有待审核的文章
+        postRepository.rejectPendingByUserId(id);
         broadcastRefresh();
     }
 

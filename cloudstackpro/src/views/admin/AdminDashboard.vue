@@ -94,259 +94,6 @@
         </div>
       </section>
 
-      <section class="chart-grid">
-        <div class="card chart-card">
-          <div class="chart-decor-blob chart-decor-blob--1"></div>
-          <div class="chart-decor-blob chart-decor-blob--2"></div>
-          
-          <div class="chart-header">
-            <div>
-              <p class="chart-label">发布趋势</p>
-              <h3 class="chart-title">文章发布量</h3>
-            </div>
-            <div class="chart-meta-box">
-              <span class="chart-meta-label">峰值</span>
-              <span class="chart-meta-value">{{ postChart.max }}</span>
-            </div>
-          </div>
-          <div
-            class="chart-canvas"
-            @mousemove="handleChartMove($event, 'post')"
-            @mouseleave="clearChartHover('post')"
-            @click="toggleChartPin($event, 'post')"
-          >
-            <div class="chart-yaxis">
-              <span v-for="tick in postYAxis" :key="`post-${tick}`">{{ tick }}</span>
-            </div>
-            <div class="chart-grid-lines">
-              <div v-for="i in 5" :key="i" class="chart-grid-line"></div>
-            </div>
-            <svg viewBox="0 0 320 170" class="line-chart" aria-hidden="true" preserveAspectRatio="none">
-              <defs>
-                <linearGradient id="postFill" x1="0" y1="0" x2="0" y2="170" gradientUnits="userSpaceOnUse">
-                  <stop offset="0" stop-color="#3B82F6" stop-opacity="0.3" />
-                  <stop offset="1" stop-color="#3B82F6" stop-opacity="0" />
-                </linearGradient>
-                <filter id="postShadow" x="-50%" y="-50%" width="200%" height="200%">
-                  <feGaussianBlur in="SourceAlpha" stdDeviation="4" result="blur" />
-                  <feOffset in="blur" dx="0" dy="4" result="offsetBlur" />
-                  <feFlood flood-color="#3B82F6" flood-opacity="0.3" result="offsetColor" />
-                  <feComposite in="offsetColor" in2="offsetBlur" operator="in" result="offsetBlur" />
-                  <feGaussianBlur in="SourceAlpha" stdDeviation="8" result="glowBlur" />
-                  <feFlood flood-color="#3B82F6" flood-opacity="0.4" result="glowColor" />
-                  <feComposite in="glowColor" in2="glowBlur" operator="in" result="glow" />
-                  <feMerge>
-                    <feMergeNode in="offsetBlur" />
-                    <feMergeNode in="glow" />
-                    <feMergeNode in="SourceGraphic" />
-                  </feMerge>
-                </filter>
-              </defs>
-              <path class="chart-area" :d="postChart.area" fill="url(#postFill)" />
-              <path class="chart-line" :d="postChart.line" stroke="#3B82F6" stroke-width="3" stroke-linecap="round" filter="url(#postShadow)" fill="none" />
-            </svg>
-            <div v-if="postHover" class="chart-cursor-line" :style="{ left: chartLeft('post', postHover.dotX) }"></div>
-            <div
-              v-if="postHover"
-              class="chart-active-dot"
-              :style="{ left: chartLeft('post', postHover.dotX), top: chartTop('post', postHover.dotY) }"
-            ></div>
-            <div
-              v-if="postHover"
-              class="chart-tooltip"
-              :class="{ 'chart-tooltip--below': isTooltipBelow('post', postHover.dotY) }"
-              :style="{ left: chartLeft('post', postHover.dotX), top: chartTop('post', postHover.dotY) }"
-            >
-              <div class="chart-tooltip-header">{{ postHover.label }} 数据分析</div>
-              <div class="chart-tooltip-body">
-                <div class="chart-tooltip-row">
-                  <span>核心指标:</span>
-                  <span class="chart-tooltip-value">{{ postHover.value }}</span>
-                </div>
-              </div>
-            </div>
-            <div class="chart-axis">
-              <span
-                v-for="tick in postAxisTicks"
-                :key="tick.label"
-                class="chart-axis-tick"
-                :style="{ left: tick.left }"
-              >
-                {{ tick.label }}
-              </span>
-            </div>
-          </div>
-        </div>
-
-        <div class="card chart-card">
-          <div class="chart-decor-blob chart-decor-blob--3"></div>
-          <div class="chart-decor-blob chart-decor-blob--4"></div>
-
-          <div class="chart-header">
-            <div>
-              <p class="chart-label">互动趋势</p>
-              <h3 class="chart-title">评论发布量</h3>
-            </div>
-            <div class="chart-meta-box">
-              <span class="chart-meta-label">峰值</span>
-              <span class="chart-meta-value">{{ commentChart.max }}</span>
-            </div>
-          </div>
-          <div
-            class="chart-canvas"
-            @mousemove="handleChartMove($event, 'comment')"
-            @mouseleave="clearChartHover('comment')"
-            @click="toggleChartPin($event, 'comment')"
-          >
-            <div class="chart-yaxis">
-              <span v-for="tick in commentYAxis" :key="`comment-${tick}`">{{ tick }}</span>
-            </div>
-            <div class="chart-grid-lines">
-              <div v-for="i in 5" :key="i" class="chart-grid-line"></div>
-            </div>
-            <svg viewBox="0 0 320 170" class="line-chart" aria-hidden="true" preserveAspectRatio="none">
-              <defs>
-                <linearGradient id="commentFill" x1="0" y1="0" x2="0" y2="170" gradientUnits="userSpaceOnUse">
-                  <stop offset="0" stop-color="#6366F1" stop-opacity="0.3" />
-                  <stop offset="1" stop-color="#6366F1" stop-opacity="0" />
-                </linearGradient>
-                <filter id="commentShadow" x="-50%" y="-50%" width="200%" height="200%">
-                  <feGaussianBlur in="SourceAlpha" stdDeviation="4" result="blur" />
-                  <feOffset in="blur" dx="0" dy="4" result="offsetBlur" />
-                  <feFlood flood-color="#6366F1" flood-opacity="0.3" result="offsetColor" />
-                  <feComposite in="offsetColor" in2="offsetBlur" operator="in" result="offsetBlur" />
-                  <feGaussianBlur in="SourceAlpha" stdDeviation="8" result="glowBlur" />
-                  <feFlood flood-color="#6366F1" flood-opacity="0.4" result="glowColor" />
-                  <feComposite in="glowColor" in2="glowBlur" operator="in" result="glow" />
-                  <feMerge>
-                    <feMergeNode in="offsetBlur" />
-                    <feMergeNode in="glow" />
-                    <feMergeNode in="SourceGraphic" />
-                  </feMerge>
-                </filter>
-              </defs>
-              <path class="chart-area" :d="commentChart.area" fill="url(#commentFill)" />
-              <path class="chart-line" :d="commentChart.line" stroke="#6366F1" stroke-width="3" stroke-linecap="round" filter="url(#commentShadow)" fill="none" />
-            </svg>
-            <div v-if="commentHover" class="chart-cursor-line chart-cursor-line--violet" :style="{ left: chartLeft('comment', commentHover.dotX) }"></div>
-            <div
-              v-if="commentHover"
-              class="chart-active-dot chart-active-dot--violet"
-              :style="{ left: chartLeft('comment', commentHover.dotX), top: chartTop('comment', commentHover.dotY) }"
-            ></div>
-            <div
-              v-if="commentHover"
-              class="chart-tooltip"
-              :class="{ 'chart-tooltip--below': isTooltipBelow('comment', commentHover.dotY) }"
-              :style="{ left: chartLeft('comment', commentHover.dotX), top: chartTop('comment', commentHover.dotY) }"
-            >
-              <div class="chart-tooltip-header chart-tooltip-header--violet">{{ commentHover.label }} 数据分析</div>
-              <div class="chart-tooltip-body">
-                <div class="chart-tooltip-row">
-                  <span>核心指标:</span>
-                  <span class="chart-tooltip-value chart-tooltip-value--violet">{{ commentHover.value }}</span>
-                </div>
-              </div>
-            </div>
-            <div class="chart-axis">
-              <span
-                v-for="tick in commentAxisTicks"
-                :key="tick.label"
-                class="chart-axis-tick"
-                :style="{ left: tick.left }"
-              >
-                {{ tick.label }}
-              </span>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section class="chart-row">
-        <div class="card chart-card chart-wide">
-          <div class="chart-decor-blob chart-decor-blob--1"></div>
-          <div class="chart-decor-blob chart-decor-blob--2"></div>
-
-          <div class="chart-header">
-            <div>
-              <p class="chart-label">活跃趋势</p>
-              <h3 class="chart-title">用户登录频次</h3>
-            </div>
-            <div class="chart-meta-box">
-              <span class="chart-meta-label">峰值</span>
-              <span class="chart-meta-value">{{ loginChart.max }}</span>
-            </div>
-          </div>
-          <div
-            class="chart-canvas chart-canvas--wide"
-            @mousemove="handleChartMove($event, 'login')"
-            @mouseleave="clearChartHover('login')"
-            @click="toggleChartPin($event, 'login')"
-          >
-            <div class="chart-yaxis">
-              <span v-for="tick in loginYAxis" :key="`login-${tick}`">{{ tick }}</span>
-            </div>
-            <div class="chart-grid-lines">
-              <div v-for="i in 5" :key="i" class="chart-grid-line"></div>
-            </div>
-            <svg viewBox="0 0 520 170" class="line-chart" aria-hidden="true" preserveAspectRatio="none">
-              <defs>
-                <linearGradient id="loginFill" x1="0" y1="0" x2="0" y2="170" gradientUnits="userSpaceOnUse">
-                  <stop offset="0" stop-color="#10B981" stop-opacity="0.3" />
-                  <stop offset="1" stop-color="#10B981" stop-opacity="0" />
-                </linearGradient>
-                <filter id="loginShadow" x="-50%" y="-50%" width="200%" height="200%">
-                  <feGaussianBlur in="SourceAlpha" stdDeviation="4" result="blur" />
-                  <feOffset in="blur" dx="0" dy="4" result="offsetBlur" />
-                  <feFlood flood-color="#10B981" flood-opacity="0.3" result="offsetColor" />
-                  <feComposite in="offsetColor" in2="offsetBlur" operator="in" result="offsetBlur" />
-                  <feGaussianBlur in="SourceAlpha" stdDeviation="8" result="glowBlur" />
-                  <feFlood flood-color="#10B981" flood-opacity="0.4" result="glowColor" />
-                  <feComposite in="glowColor" in2="glowBlur" operator="in" result="glow" />
-                  <feMerge>
-                    <feMergeNode in="offsetBlur" />
-                    <feMergeNode in="glow" />
-                    <feMergeNode in="SourceGraphic" />
-                  </feMerge>
-                </filter>
-              </defs>
-              <path class="chart-area" :d="loginChart.area" fill="url(#loginFill)" />
-              <path class="chart-line" :d="loginChart.line" stroke="#10B981" stroke-width="3" stroke-linecap="round" filter="url(#loginShadow)" fill="none" />
-            </svg>
-            <div v-if="loginHover" class="chart-cursor-line chart-cursor-line--mint" :style="{ left: chartLeft('login', loginHover.dotX) }"></div>
-            <div
-              v-if="loginHover"
-              class="chart-active-dot chart-active-dot--mint"
-              :style="{ left: chartLeft('login', loginHover.dotX), top: chartTop('login', loginHover.dotY) }"
-            ></div>
-            <div
-              v-if="loginHover"
-              class="chart-tooltip"
-              :class="{ 'chart-tooltip--below': isTooltipBelow('login', loginHover.dotY) }"
-              :style="{ left: chartLeft('login', loginHover.dotX), top: chartTop('login', loginHover.dotY) }"
-            >
-              <div class="chart-tooltip-header chart-tooltip-header--mint">{{ loginHover.label }} 数据分析</div>
-              <div class="chart-tooltip-body">
-                <div class="chart-tooltip-row">
-                  <span>核心指标:</span>
-                  <span class="chart-tooltip-value chart-tooltip-value--mint">{{ loginHover.value }}</span>
-                </div>
-              </div>
-            </div>
-            <div class="chart-axis chart-axis--wide">
-              <span
-                v-for="tick in loginAxisTicks"
-                :key="tick.label"
-                class="chart-axis-tick"
-                :style="{ left: tick.left }"
-              >
-                {{ tick.label }}
-              </span>
-            </div>
-          </div>
-        </div>
-      </section>
-
       <section class="chart-row">
         <div class="card chart-card chart-card--sun chart-pie">
           <div class="chart-header">
@@ -471,6 +218,113 @@
           </div>
         </div>
       </section>
+
+      <section class="line-grid">
+        <div
+          v-for="chart in lineCharts"
+          :key="chart.id"
+          class="card line-card"
+          :style="chart.accentStyle"
+        >
+          <div class="chart-header line-header">
+            <div>
+              <p class="chart-label">{{ chart.label }}</p>
+              <h3 class="chart-title">{{ chart.title }}</h3>
+            </div>
+            <div class="line-header-actions">
+              <span class="chart-chip">{{ chart.rangeLabel }}</span>
+            </div>
+          </div>
+          <div class="line-chart">
+            <svg
+              class="line-canvas"
+              :viewBox="`0 0 ${chart.width} ${chart.height}`"
+              @pointermove="handleLinePointer(chart.id, $event)"
+              @pointerleave="clearLineActive(chart.id)"
+              @pointerdown="handleLinePointer(chart.id, $event)"
+            >
+              <defs>
+                <linearGradient :id="chart.strokeId" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" :stop-color="chart.accentStart" stop-opacity="0.95" />
+                  <stop offset="100%" :stop-color="chart.accentEnd" stop-opacity="0.95" />
+                </linearGradient>
+                <linearGradient :id="chart.areaId" x1="0%" y1="0%" x2="0%" y2="100%">
+                  <stop offset="0%" :stop-color="chart.accentStart" stop-opacity="0.28" />
+                  <stop offset="100%" :stop-color="chart.accentEnd" stop-opacity="0" />
+                </linearGradient>
+              </defs>
+              <g class="line-grid-lines">
+                <line
+                  v-for="(grid, index) in chart.gridLines"
+                  :key="`${chart.id}-grid-${index}`"
+                  class="line-grid-line"
+                  :x1="chart.gridLeft"
+                  :x2="chart.gridRight"
+                  :y1="grid.y"
+                  :y2="grid.y"
+                />
+              </g>
+              <g class="line-axis">
+                <text
+                  v-for="(grid, index) in chart.gridLines"
+                  :key="`${chart.id}-y-${index}`"
+                  class="line-axis-label line-axis-label--y"
+                  :x="chart.gridLeft - 8"
+                  :y="grid.y + 3"
+                >
+                  {{ grid.value }}
+                </text>
+                <text
+                  v-for="(tick, index) in chart.axisLabels"
+                  :key="`${chart.id}-x-${index}`"
+                  class="line-axis-label line-axis-label--x"
+                  :x="tick.x"
+                  :y="chart.axisY"
+                  :style="{ textAnchor: tick.anchor || 'middle' }"
+                >
+                  {{ tick.label }}
+                </text>
+              </g>
+              <path
+                v-if="!chart.empty"
+                class="line-area"
+                :d="chart.areaPath"
+                :fill="`url(#${chart.areaId})`"
+              />
+              <path
+                v-if="!chart.empty"
+                class="line-path"
+                :d="chart.path"
+                :stroke="`url(#${chart.strokeId})`"
+                pathLength="100"
+              />
+              <g v-if="chart.activePoint" class="line-active">
+                <line
+                  class="line-cross"
+                  :x1="chart.activePoint.x"
+                  :x2="chart.activePoint.x"
+                  :y1="chart.gridTop"
+                  :y2="chart.gridBottom"
+                />
+                <circle
+                  class="line-active-dot"
+                  :cx="chart.activePoint.x"
+                  :cy="chart.activePoint.y"
+                  r="5"
+                />
+              </g>
+            </svg>
+            <div v-if="chart.activePoint" class="line-tooltip" :style="chart.tooltipStyle">
+              <div class="line-tooltip-label">{{ chart.activePoint.label }}</div>
+              <div class="line-tooltip-value">{{ chart.activePoint.value }}{{ chart.unit }}</div>
+            </div>
+            <div v-if="chart.empty" class="line-empty">
+              <div>暂无数据</div>
+              <span>等待统计数据</span>
+            </div>
+          </div>
+        </div>
+      </section>
     </main>
 
     <div v-if="openAnnModal" class="modal-mask">
@@ -508,7 +362,7 @@ import { useRouter } from 'vue-router'
 import AdminHeader from '@/components/admin/AdminHeader.vue'
 import AdminHero from '@/components/admin/AdminHero.vue'
 import { userService } from '@/services/userService'
-import { adminService, type AdminPost, type DashboardPayload, type ModerationItem } from '@/services/adminService'
+import { adminService, type AdminPost, type DashboardPayload, type ModerationItem, type ChartPoint } from '@/services/adminService'
 
 const router = useRouter()
 const currentUser = userService.getCurrentUser()
@@ -516,8 +370,6 @@ const isAdmin = currentUser?.isAdmin || false
 
 const heroKeyword = ref('')
 const errorMessage = ref('')
-const postCommentDays = 5
-const loginDays = 10
 const stats = ref([
   { label: '总文章', value: '0', icon: 'fas fa-feather-alt', bg: 'linear-gradient(135deg, #e0f2ff, #cde6ff)' },
   { label: '用户数', value: '0', icon: 'fas fa-users', bg: 'linear-gradient(135deg, #e6f7ff, #e8f5ff)' },
@@ -534,7 +386,6 @@ const announcements = reactive<{ id: number; title: string; time: string; tag: s
 const openAnnModal = ref(false)
 const annForm = reactive({ title: '', content: '', type: '系统' })
 
-type SeriesPoint = { label: string; value: number }
 type PieSlice = { label: string; value: number; color?: string; id?: number; name?: string }
 type PieChartSlice = {
   label: string
@@ -551,121 +402,16 @@ type PieChartSlice = {
   gradId: string
 }
 
-const postSeries = ref<SeriesPoint[]>([])
-const commentSeries = ref<SeriesPoint[]>([])
-const loginSeries = ref<SeriesPoint[]>([])
 const categorySlices = ref<PieSlice[]>([])
+const postSeries = ref<ChartPoint[]>([])
+const commentSeries = ref<ChartPoint[]>([])
+const loginSeries = ref<ChartPoint[]>([])
 
 const pieSegmentRadius = 160
 const pieRingRadius = 130
 
-const postAxis = computed(() => (postSeries.value.length ? postSeries.value : buildDateSeries([], postCommentDays)))
-const commentAxis = computed(() => (commentSeries.value.length ? commentSeries.value : buildDateSeries([], postCommentDays)))
-const loginAxis = computed(() => (loginSeries.value.length ? loginSeries.value : buildDateSeries([], loginDays)))
-
-type ChartKind = 'post' | 'comment' | 'login'
-type ChartHover = { x: number; y: number; dotX: number; dotY: number; label: string; value: number; pinned: boolean }
-
-const postHover = ref<ChartHover | null>(null)
-const commentHover = ref<ChartHover | null>(null)
-const loginHover = ref<ChartHover | null>(null)
-const postPinned = ref(false)
-const commentPinned = ref(false)
-const loginPinned = ref(false)
-
 const setError = (msg: string) => {
   errorMessage.value = msg
-}
-
-const formatKey = (date: Date) => {
-  const y = date.getFullYear()
-  const m = String(date.getMonth() + 1).padStart(2, '0')
-  const d = String(date.getDate()).padStart(2, '0')
-  return `${y}-${m}-${d}`
-}
-
-const formatLabel = (date: Date) => {
-  const m = String(date.getMonth() + 1).padStart(2, '0')
-  const d = String(date.getDate()).padStart(2, '0')
-  return `${m}-${d}`
-}
-
-const buildDateSeries = (dates: Array<string | undefined>, days: number) => {
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
-  const keys: string[] = []
-  const labels: string[] = []
-  for (let i = days - 1; i >= 0; i -= 1) {
-    const d = new Date(today)
-    d.setDate(today.getDate() - i)
-    keys.push(formatKey(d))
-    labels.push(formatLabel(d))
-  }
-
-  const counts = new Map(keys.map(key => [key, 0]))
-  dates.forEach(dateStr => {
-    if (!dateStr) return
-    const date = new Date(dateStr)
-    if (Number.isNaN(date.getTime())) return
-    date.setHours(0, 0, 0, 0)
-    const key = formatKey(date)
-    if (counts.has(key)) {
-      counts.set(key, (counts.get(key) || 0) + 1)
-    }
-  })
-
-  return labels.map((label, index) => ({
-    label,
-    value: counts.get(keys[index]) || 0
-  }))
-}
-
-const buildLinePath = (points: Array<{ x: number; y: number }>) => {
-  if (!points.length) return ''
-  
-  // Catmull-Rom to Cubic Bezier conversion
-  const k = 0.3 // tension
-  
-  let path = `M ${points[0].x.toFixed(1)},${points[0].y.toFixed(1)}`
-  
-  for (let i = 0; i < points.length - 1; i++) {
-    const p0 = points[Math.max(0, i - 1)]
-    const p1 = points[i]
-    const p2 = points[i + 1]
-    const p3 = points[Math.min(points.length - 1, i + 2)]
-    
-    const cp1x = p1.x + (p2.x - p0.x) * k
-    const cp1y = p1.y + (p2.y - p0.y) * k
-    const cp2x = p2.x - (p3.x - p1.x) * k
-    const cp2y = p2.y - (p3.y - p1.y) * k
-    
-    path += ` C ${cp1x.toFixed(1)},${cp1y.toFixed(1)} ${cp2x.toFixed(1)},${cp2y.toFixed(1)} ${p2.x.toFixed(1)},${p2.y.toFixed(1)}`
-  }
-  
-  return path
-}
-
-const buildLineChart = (series: SeriesPoint[], width: number, height: number, fallbackLength: number) => {
-  const safeSeries = series.length ? series : Array.from({ length: fallbackLength }, () => ({ label: '', value: 0 }))
-  const values = safeSeries.map(point => point.value)
-  const max = Math.max(...values, 1)
-  const min = 0
-  const range = max - min || 1
-  const padding = 10
-  const usableWidth = width - padding * 2
-  const usableHeight = height - padding * 2
-  const step = safeSeries.length > 1 ? usableWidth / (safeSeries.length - 1) : 0
-  const points = safeSeries.map((point, index) => {
-    const x = padding + index * step
-    const y = height - padding - ((point.value - min) / range) * usableHeight
-    return { x, y }
-  })
-  const line = buildLinePath(points)
-  const first = points[0]
-  const last = points[points.length - 1]
-  const baseY = height - padding
-  const area = `${line} L ${last.x.toFixed(1)},${baseY.toFixed(1)} L ${first.x.toFixed(1)},${baseY.toFixed(1)} Z`
-  return { line, area, last, max, points, width, height }
 }
 
 const darkenHex = (hex: string, amount = 0.18) => {
@@ -735,9 +481,6 @@ const buildPieChart = (slices: PieSlice[]) => {
   }
 }
 
-const postChart = computed(() => buildLineChart(postSeries.value, 320, 170, postCommentDays))
-const commentChart = computed(() => buildLineChart(commentSeries.value, 320, 170, postCommentDays))
-const loginChart = computed(() => buildLineChart(loginSeries.value, 520, 170, loginDays))
 const pieChart = computed(() => buildPieChart(categorySlices.value))
 
 const activePieIndex = ref(0)
@@ -794,170 +537,228 @@ const pieSliceStyle = (slice: { dash: string; offset: number }, index: number) =
   '--delay': `${index * 80}ms`
 })
 
-const buildYAxisTicks = (max: number, steps = 4) => {
-  const safeMax = Math.max(1, max)
-  const step = Math.ceil(safeMax / steps)
-  const top = step * steps
-  return Array.from({ length: steps + 1 }, (_, idx) => top - idx * step)
+type LinePoint = ChartPoint & { x: number; y: number; index: number }
+type LineAxisLabel = { x: number; label: string; anchor?: 'start' | 'middle' | 'end' }
+type LineGrid = { y: number; value: number }
+type LineChartConfig = {
+  id: 'login' | 'comment' | 'post'
+  label: string
+  title: string
+  rangeLabel: string
+  unit: string
+  accentStart: string
+  accentEnd: string
+  series: ChartPoint[]
 }
 
-const postYAxis = computed(() => buildYAxisTicks(postChart.value.max, 4))
-const commentYAxis = computed(() => buildYAxisTicks(commentChart.value.max, 4))
-const loginYAxis = computed(() => buildYAxisTicks(loginChart.value.max, 4))
+const lineChartBox = {
+  width: 640,
+  height: 220,
+  padding: {
+    top: 18,
+    right: 20,
+    bottom: 38,
+    left: 40
+  }
+}
 
-const buildAxisTicks = (axis: SeriesPoint[], chart: { points: Array<{ x: number }>; width: number }) => {
-  if (!axis.length || !chart.points.length || !chart.width) return []
-  const length = Math.min(axis.length, chart.points.length)
-  return axis.slice(0, length).map((point, index) => {
-    const x = chart.points[index]?.x ?? 0
-    const left = `${(x / chart.width) * 100}%`
-    return { label: point.label, left }
+const lineActive = reactive<Record<LineChartConfig['id'], number | null>>({
+  login: null,
+  comment: null,
+  post: null
+})
+
+const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value))
+
+const buildSmoothPath = (points: Array<{ x: number; y: number }>) => {
+  if (points.length === 0) return ''
+  if (points.length === 1) return `M ${points[0].x} ${points[0].y}`
+  let d = `M ${points[0].x} ${points[0].y}`
+  for (let i = 1; i < points.length; i += 1) {
+    const prev = points[i - 1]
+    const current = points[i]
+    const midX = (prev.x + current.x) / 2
+    const midY = (prev.y + current.y) / 2
+    d += ` Q ${prev.x} ${prev.y} ${midX} ${midY}`
+  }
+  const last = points[points.length - 1]
+  d += ` T ${last.x} ${last.y}`
+  return d
+}
+
+const buildLineChartModel = (config: LineChartConfig) => {
+  const { width, height, padding } = lineChartBox
+  const plotWidth = width - padding.left - padding.right
+  const plotHeight = height - padding.top - padding.bottom
+  const series = config.series ?? []
+  const values = series.map(point => point.value)
+  const maxValue = values.length ? Math.max(...values) : 0
+  const minValue = 0
+  const range = maxValue - minValue || 1
+  const count = series.length
+  const step = count > 1 ? plotWidth / (count - 1) : 0
+  const points: LinePoint[] = series.map((point, index) => {
+    const x = padding.left + (count > 1 ? step * index : plotWidth / 2)
+    const y = padding.top + (1 - (point.value - minValue) / range) * plotHeight
+    return { ...point, x, y, index }
   })
-}
-
-const postAxisTicks = computed(() => buildAxisTicks(postAxis.value, postChart.value))
-const commentAxisTicks = computed(() => buildAxisTicks(commentAxis.value, commentChart.value))
-const loginAxisTicks = computed(() => buildAxisTicks(loginAxis.value, loginChart.value))
-
-const buildGridStyle = (chart: { points: Array<{ x: number }>; width: number }) => {
-  if (!chart.points.length || chart.width <= 0) return {}
-  const offset = chart.points[0]?.x ?? 0
-  const step = chart.points.length > 1 ? chart.points[1].x - chart.points[0].x : chart.width
+  const path = buildSmoothPath(points)
+  const baseY = padding.top + plotHeight
+  const areaPath = points.length
+    ? `${path} L ${points[points.length - 1].x} ${baseY} L ${points[0].x} ${baseY} Z`
+    : ''
+  const axisLabels: LineAxisLabel[] = points
+    .map(point => ({ x: point.x, label: point.label, index: point.index }))
+    .filter(item => {
+      if (points.length <= 4) return true
+      const lastIndex = points.length - 1
+      const midIndex = Math.floor(lastIndex / 2)
+      return item.index === 0 || item.index === midIndex || item.index === lastIndex
+    })
+    .map(item => {
+      const lastIndex = points.length - 1
+      const anchor = item.index === 0 ? 'start' : item.index === lastIndex ? 'end' : 'middle'
+      return { x: item.x, label: item.label, anchor }
+    })
+  const gridLines: LineGrid[] = [0, 0.5, 1].map(ratio => ({
+    y: padding.top + plotHeight * ratio,
+    value: Math.round(maxValue - (maxValue - minValue) * ratio)
+  }))
+  const sum = values.reduce((total, value) => total + value, 0)
+  const avg = values.length ? Math.round(sum / values.length) : 0
+  const currentValue = values.length ? values[values.length - 1] : 0
+  const trend = values.length >= 2 ? ((values[values.length - 1] - values[0]) / (values[0] || 1)) * 100 : 0
+  const trendAbs = Math.abs(trend)
+  const empty = values.length === 0
+  const activeIndex = lineActive[config.id]
+  const safeActiveIndex = activeIndex !== null && activeIndex !== undefined && points.length
+    ? clamp(activeIndex, 0, points.length - 1)
+    : null
+  const activePoint = safeActiveIndex !== null ? points[safeActiveIndex] : null
+  const tooltipStyle = activePoint
+    ? {
+      '--tooltip-x': `${(activePoint.x / width) * 100}%`,
+      '--tooltip-y': `${(activePoint.y / height) * 100}%`
+    }
+    : {}
+  const accentStyle = {
+    '--accent-start': config.accentStart,
+    '--accent-end': config.accentEnd,
+    '--accent-soft': toRgba(config.accentStart, 0.35)
+  }
+  const currentLabel = empty ? '--' : `${currentValue}${config.unit}`
+  const maxLabel = empty ? '--' : `${maxValue}${config.unit}`
+  const avgLabel = empty ? '--' : `${avg}${config.unit}`
+  const trendDisplay = values.length >= 2 ? `${trendAbs.toFixed(1)}%` : '--'
   return {
-    '--grid-step': `${(step / chart.width) * 100}%`,
-    '--grid-offset': `${(offset / chart.width) * 100}%`
+    ...config,
+    width,
+    height,
+    gridLeft: padding.left,
+    gridRight: padding.left + plotWidth,
+    gridTop: padding.top,
+    gridBottom: baseY,
+    axisY: baseY + 16,
+    axisLabels,
+    gridLines,
+    points,
+    path,
+    areaPath,
+    sum,
+    avg,
+    currentValue,
+    maxValue,
+    currentLabel,
+    maxLabel,
+    avgLabel,
+    trend,
+    trendAbs,
+    trendUp: trend >= 0,
+    trendDisplay,
+    activeIndex: safeActiveIndex,
+    activePoint,
+    tooltipStyle,
+    accentStyle,
+    strokeId: `line-stroke-${config.id}`,
+    areaId: `line-area-${config.id}`,
+    empty
   }
 }
 
-const postGridStyle = computed(() => buildGridStyle(postChart.value))
-const commentGridStyle = computed(() => buildGridStyle(commentChart.value))
-const loginGridStyle = computed(() => buildGridStyle(loginChart.value))
-
-const getChartConfig = (kind: ChartKind) => {
-  if (kind === 'post') {
-    return { axis: postAxis.value, chart: postChart.value, hover: postHover, pinned: postPinned }
+const lineChartConfigs = computed<LineChartConfig[]>(() => [
+  {
+    id: 'login',
+    label: '用户活跃 · last_login_at',
+    title: '近7天活跃人数',
+    rangeLabel: '近7天',
+    unit: '人',
+    accentStart: '#3b82f6',
+    accentEnd: '#60a5fa',
+    series: loginSeries.value
+  },
+  {
+    id: 'comment',
+    label: '评论发布',
+    title: '近4天评论数量',
+    rangeLabel: '近4天',
+    unit: '条',
+    accentStart: '#0ea5e9',
+    accentEnd: '#7dd3fc',
+    series: commentSeries.value
+  },
+  {
+    id: 'post',
+    label: '文章发布',
+    title: '近4天文章数量',
+    rangeLabel: '近4天',
+    unit: '篇',
+    accentStart: '#6366f1',
+    accentEnd: '#a5b4fc',
+    series: postSeries.value
   }
-  if (kind === 'comment') {
-    return { axis: commentAxis.value, chart: commentChart.value, hover: commentHover, pinned: commentPinned }
-  }
-  return { axis: loginAxis.value, chart: loginChart.value, hover: loginHover, pinned: loginPinned }
+])
+
+const lineCharts = computed(() => lineChartConfigs.value.map(buildLineChartModel))
+
+const handleLinePointer = (chartId: LineChartConfig['id'], event: PointerEvent) => {
+  const chart = lineCharts.value.find(item => item.id === chartId)
+  if (!chart || chart.points.length === 0) return
+  const target = event.currentTarget as SVGSVGElement
+  const rect = target.getBoundingClientRect()
+  const offsetX = event.clientX - rect.left
+  const ratio = offsetX / rect.width
+  const index = clamp(Math.round(ratio * (chart.points.length - 1)), 0, chart.points.length - 1)
+  lineActive[chartId] = index
 }
 
-const chartDims: Record<ChartKind, { width: number; height: number }> = {
-  post: { width: 320, height: 170 },
-  comment: { width: 320, height: 170 },
-  login: { width: 520, height: 170 }
-}
-
-const chartLeft = (kind: ChartKind, dotX: number) => {
-  const width = chartDims[kind].width
-  return `calc(40px + ((100% - 60px) * ${dotX} / ${width}))`
-}
-
-const chartTop = (kind: ChartKind, dotY: number) => {
-  const height = chartDims[kind].height
-  return `calc(20px + ((100% - 50px) * ${dotY} / ${height}))`
-}
-
-const isTooltipBelow = (kind: ChartKind, dotY: number) => {
-  const height = chartDims[kind].height
-  return dotY / height <= 0.28
-}
-
-const resolveChartHover = (event: MouseEvent, kind: ChartKind) => {
-  const { axis, chart } = getChartConfig(kind)
-  const points = chart.points || []
-  const maxIndex = Math.min(axis.length, points.length) - 1
-  if (maxIndex < 0) return null
-  const canvas = event.currentTarget as HTMLElement | null
-  if (!canvas) return null
-  
-  const rect = canvas.getBoundingClientRect()
-  const paddingLeft = 40
-  const paddingRight = 20
-  const chartWidthPixels = rect.width - paddingLeft - paddingRight
-  
-  // Calculate mouse position relative to chart area
-  const mouseX = event.clientX - rect.left - paddingLeft
-  const clampedX = Math.max(0, Math.min(chartWidthPixels, mouseX))
-  
-  // Map to internal chart coordinates (0..320)
-  const chartX = (clampedX / chartWidthPixels) * chart.width
-  
-  const firstX = points[0].x
-  const step = points.length > 1 ? points[1].x - points[0].x : 0
-  let index = 0
-  if (step) {
-    index = Math.round((chartX - firstX) / step)
-  }
-  index = Math.max(0, Math.min(maxIndex, index))
-  
-  const point = points[index]
-  const axisPoint = axis[index]
-  
-  // Return chart coordinates (dotX, dotY) directly
-  // We will handle the screen mapping in CSS for perfect alignment
-  return {
-    x: 0, // Not used for dot positioning anymore
-    y: 0, // Not used for dot positioning anymore
-    dotX: point.x,
-    dotY: point.y,
-    label: axisPoint?.label ?? '',
-    value: axisPoint?.value ?? 0,
-    pinned: false
-  }
-}
-
-const handleChartMove = (event: MouseEvent, kind: ChartKind) => {
-  const config = getChartConfig(kind)
-  if (config.pinned.value) return
-  const hover = resolveChartHover(event, kind)
-  config.hover.value = hover
-}
-
-const clearChartHover = (kind: ChartKind) => {
-  const config = getChartConfig(kind)
-  if (config.pinned.value) return
-  config.hover.value = null
-}
-
-const toggleChartPin = (event: MouseEvent, kind: ChartKind) => {
-  const config = getChartConfig(kind)
-  if (config.pinned.value) {
-    config.pinned.value = false
-    config.hover.value = resolveChartHover(event, kind)
-    return
-  }
-  const hover = resolveChartHover(event, kind)
-  if (!hover) return
-  config.pinned.value = true
-  config.hover.value = { ...hover, pinned: true }
+const clearLineActive = (chartId: LineChartConfig['id']) => {
+  lineActive[chartId] = null
 }
 
 const loadChartData = async () => {
   try {
     const chartRes = await adminService.getCharts({
-      postDays: postCommentDays,
-      commentDays: postCommentDays,
-      loginDays
+      postDays: 4,
+      commentDays: 4,
+      loginDays: 7
     })
     if (chartRes.success && chartRes.data) {
-      postSeries.value = chartRes.data.postSeries || buildDateSeries([], postCommentDays)
-      commentSeries.value = chartRes.data.commentSeries || buildDateSeries([], postCommentDays)
-      loginSeries.value = chartRes.data.loginSeries || buildDateSeries([], loginDays)
       categorySlices.value = chartRes.data.categorySlices || []
+      postSeries.value = chartRes.data.postSeries || []
+      commentSeries.value = chartRes.data.commentSeries || []
+      loginSeries.value = chartRes.data.loginSeries || []
     } else {
-      postSeries.value = buildDateSeries([], postCommentDays)
-      commentSeries.value = buildDateSeries([], postCommentDays)
-      loginSeries.value = buildDateSeries([], loginDays)
       categorySlices.value = []
+      postSeries.value = []
+      commentSeries.value = []
+      loginSeries.value = []
     }
   } catch (e) {
     console.error('加载图表数据失败', e)
-    postSeries.value = buildDateSeries([], postCommentDays)
-    commentSeries.value = buildDateSeries([], postCommentDays)
-    loginSeries.value = buildDateSeries([], loginDays)
     categorySlices.value = []
+    postSeries.value = []
+    commentSeries.value = []
+    loginSeries.value = []
   }
 }
 
@@ -1218,13 +1019,6 @@ onUnmounted(() => {
   color: var(--text-dark);
 }
 
-.chart-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 16px;
-  margin: 20px 0 10px;
-}
-
 .chart-row {
   margin: 16px 0;
 }
@@ -1239,291 +1033,186 @@ onUnmounted(() => {
   overflow: hidden;
 }
 
-.chart-decor-blob {
-  position: absolute;
-  border-radius: 9999px;
-  filter: blur(64px);
-  opacity: 0.6;
-  z-index: 0;
-  pointer-events: none;
-}
-
-.chart-decor-blob--1 {
-  top: -80px;
-  right: -80px;
-  width: 250px;
-  height: 250px;
-  background: #eff6ff;
-}
-
-.chart-decor-blob--2 {
-  bottom: -60px;
-  left: -60px;
-  width: 200px;
-  height: 200px;
-  background: #eef2ff;
-}
-
-.chart-decor-blob--3 {
-  top: -80px;
-  right: -80px;
-  width: 250px;
-  height: 250px;
-  background: #f5f3ff;
-}
-
-.chart-decor-blob--4 {
-  bottom: -60px;
-  left: -60px;
-  width: 200px;
-  height: 200px;
-  background: #fdf4ff;
-}
-
-.chart-meta-box {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  background: rgba(248, 250, 252, 0.5);
-  border: 1px solid rgba(241, 245, 249, 0.8);
-  padding: 6px 16px;
-  border-radius: 12px;
-}
-
-.chart-meta-label {
-  font-size: 10px;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: #94a3b8;
-  font-weight: 700;
-}
-
-.chart-meta-value {
-  font-size: 18px;
-  font-weight: 700;
-  color: #3b82f6;
-  line-height: 1.2;
-}
-
-.chart-yaxis {
-  position: absolute;
-  left: 0;
-  top: 20px;
-  bottom: 30px;
-  width: 40px;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  align-items: flex-end;
-  padding-right: 8px;
+.chart-chip {
+  padding: 6px 12px;
+  border-radius: 999px;
   font-size: 11px;
-  color: #94a3b8;
-  pointer-events: none;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: #64748b;
+  background: rgba(248, 250, 252, 0.9);
+  border: 1px solid rgba(148, 163, 184, 0.3);
 }
 
-.chart-canvas {
+.line-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  margin: 20px 0 12px;
+}
+
+.line-card {
   position: relative;
+  padding: 20px;
+  border-radius: 20px;
+  background: #ffffff;
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.06);
+  overflow: visible;
   z-index: 1;
-  padding: 20px 20px 30px 40px;
-  border-radius: 0;
-  background: transparent;
-  border: none;
-  box-shadow: none;
-  backdrop-filter: none;
-  cursor: crosshair;
-  user-select: none;
-  height: 220px;
 }
 
-.chart-canvas::before {
-  content: none;
+.line-card::before {
+  content: '';
+  display: none;
 }
 
-.chart-canvas::after {
-  content: none;
+.line-card::after {
+  content: '';
+  display: none;
 }
 
-.chart-grid-lines {
-  position: absolute;
-  inset: 20px 0 30px 40px;
+.line-header {
+  align-items: flex-start;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.line-header-actions {
   display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  pointer-events: none;
-}
-
-.chart-grid-line {
-  width: 100%;
-  height: 1px;
-  border-top: 1px dashed rgba(226, 232, 240, 0.4);
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
 }
 
 .line-chart {
+  position: relative;
+  margin-top: 12px;
+  height: 220px;
+  border-radius: 16px;
+  background: #f8fafc;
+  border: 1px solid rgba(226, 232, 240, 0.8);
+  overflow: visible;
+}
+
+.line-canvas {
   width: 100%;
   height: 100%;
   display: block;
-  overflow: visible;
+  cursor: pointer;
+  pointer-events: auto;
+  touch-action: none;
 }
 
-.chart-cursor-line {
-  position: absolute;
-  top: 20px;
-  bottom: 30px;
-  width: 0;
-  border-left: 1px dashed #3B82F6;
-  opacity: 0.5;
-  pointer-events: none;
-  z-index: 5;
-  transform: none;
+.line-grid-line {
+  stroke: rgba(148, 163, 184, 0.2);
+  stroke-dasharray: 4 6;
 }
 
-.chart-cursor-line--violet {
-  border-color: #6366F1;
-}
-
-.chart-cursor-line--mint {
-  border-color: #10B981;
-}
-
-.chart-active-dot {
-  position: absolute;
-  width: 14px;
-  height: 14px;
-  box-sizing: content-box;
-  border-radius: 50%;
-  background-color: #3B82F6;
-  border: 5px solid #ffffff;
-  box-shadow: 0 4px 8px rgba(59, 130, 246, 0.4);
-  transition: all 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-  transform: translate(-50%, -50%);
-  z-index: 6;
-  pointer-events: none;
-  animation: dot-pop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
-}
-
-.chart-active-dot--violet {
-  background-color: #6366F1;
-  box-shadow: 0 4px 6px rgba(99, 102, 241, 0.4);
-}
-
-.chart-active-dot--mint {
-  background-color: #10B981;
-  box-shadow: 0 4px 6px rgba(16, 185, 129, 0.4);
-}
-
-.chart-tooltip {
-  position: absolute;
-  min-width: 160px;
-  padding: 16px;
-  border-radius: 16px;
-  background: rgba(255, 255, 255, 0.9);
-  border: 1px solid rgba(59, 130, 246, 0.1);
-  box-shadow: 0 10px 25px -5px rgba(59, 130, 246, 0.15), 0 8px 10px -6px rgba(59, 130, 246, 0.1);
-  backdrop-filter: blur(12px);
-  transform: translate(-50%, -100%);
-  margin-top: -16px;
-  z-index: 10;
-  pointer-events: none;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.chart-tooltip--below {
-  transform: translate(-50%, 0);
-  margin-top: 16px;
-}
-
-.chart-tooltip-header {
-  font-size: 13px;
-  font-weight: 700;
-  color: #1e3a8a;
-  padding-bottom: 8px;
-  border-bottom: 1px solid rgba(59, 130, 246, 0.1);
-}
-
-.chart-tooltip-header--violet {
-  color: #312e81;
-  border-color: rgba(99, 102, 241, 0.1);
-}
-
-.chart-tooltip-header--mint {
-  color: #064e3b;
-  border-color: rgba(16, 185, 129, 0.1);
-}
-
-.chart-tooltip-body {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.chart-tooltip-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  font-size: 12px;
-  color: #64748b;
-}
-
-.chart-tooltip-value {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-  font-size: 16px;
-  font-weight: 700;
-  color: #3b82f6;
-}
-
-.chart-tooltip-value--violet {
-  color: #6366F1;
-}
-
-.chart-tooltip-value--mint {
-  color: #10B981;
-}
-
-.chart-axis {
-  position: absolute;
-  bottom: 0;
-  left: 40px;
-  right: 20px;
-  height: 24px;
-  font-size: 11px;
+.line-axis-label {
+  fill: #64748b;
+  font-size: 10px;
   font-weight: 500;
-  font-variant-numeric: tabular-nums;
-  color: var(--text-muted);
-  overflow: visible;
 }
 
-.chart-axis-tick {
+.line-axis-label--y {
+  text-anchor: end;
+}
+
+.line-axis-label--x {
+  dominant-baseline: middle;
+}
+
+.line-area {
+  opacity: 0.35;
+}
+
+.line-path {
+  fill: none;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 100;
+  stroke-dashoffset: 100;
+  animation: line-draw 1.4s ease forwards;
+}
+
+
+.line-cross {
+  stroke: rgba(148, 163, 184, 0.45);
+  stroke-dasharray: 4 6;
+}
+
+.line-active-dot {
+  fill: #ffffff;
+  stroke: var(--accent-end, #0ea5e9);
+  stroke-width: 3;
+  filter: drop-shadow(0 4px 10px rgba(15, 23, 42, 0.18));
+}
+
+.line-tooltip {
   position: absolute;
-  top: 0;
-  transform: translateX(-50%);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
-  white-space: nowrap;
-}
-
-.chart-axis-tick::before {
-  content: '';
-  width: 1px;
-  height: 4px;
-  background: rgba(148, 163, 184, 0.2);
-}
-
-.chart-footer {
-  position: relative;
-  z-index: 1;
-  display: flex;
-  justify-content: space-between;
-  margin-top: 10px;
+  left: var(--tooltip-x);
+  top: var(--tooltip-y);
+  transform: translate(-50%, -120%);
+  padding: 8px 10px;
+  border-radius: 12px;
+  background: rgba(15, 23, 42, 0.8);
+  color: #ffffff;
   font-size: 12px;
-  color: var(--text-muted);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  backdrop-filter: blur(8px);
+  box-shadow: 0 18px 30px rgba(15, 23, 42, 0.25);
+  pointer-events: none;
+  min-width: 92px;
+  text-align: center;
+  z-index: 50;
 }
 
-.chart-wide .line-chart {
-  /* height: 160px; Removed to allow SVG to fill the container naturally */
+.line-tooltip-value {
+  font-size: 14px;
+  font-weight: 700;
+  margin-top: 2px;
+}
+
+.line-empty {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 12px;
+  background: rgba(255, 255, 255, 0.65);
+  backdrop-filter: blur(6px);
+}
+
+.line-empty span {
+  font-size: 11px;
+  color: #94a3b8;
+  margin-top: 4px;
+}
+
+.line-grid-lines,
+.line-axis,
+.line-area,
+.line-path,
+.line-active {
+  pointer-events: none;
+}
+
+
+.line-header-actions .chart-chip {
+  background: #ffffff;
+}
+
+@keyframes line-draw {
+  from {
+    stroke-dashoffset: 100;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
 }
 
 .chart-pie .chart-header {
@@ -1765,26 +1454,6 @@ onUnmounted(() => {
 .pie-value {
   font-weight: 600;
   color: var(--text-muted);
-}
-
-@keyframes line-draw {
-  to {
-    stroke-dashoffset: 0;
-  }
-}
-
-@keyframes area-rise {
-  to {
-    opacity: 0.35;
-    transform: translateY(0);
-  }
-}
-
-@keyframes dot-pop {
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
 }
 
 @keyframes pie-reveal {
@@ -2189,13 +1858,13 @@ onUnmounted(() => {
     margin: 20px 16px;
   }
 
-  .chart-grid {
-    grid-template-columns: 1fr;
-    margin: 20px 16px 10px;
-  }
-
   .chart-row {
     margin: 12px 16px;
+  }
+
+  .line-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    margin: 16px 16px 12px;
   }
 
   .pie-wrap {
@@ -2214,12 +1883,17 @@ onUnmounted(() => {
     padding: 16px;
   }
 
-  .chart-canvas {
-    padding: 10px 12px 10px 32px;
-  }
-
   .chart-title {
     font-size: 18px;
+  }
+
+  .line-grid {
+    grid-template-columns: 1fr;
+    margin: 12px;
+  }
+
+  .line-chart {
+    height: 200px;
   }
 
   .stats-grid {

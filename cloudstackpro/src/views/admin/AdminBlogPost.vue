@@ -249,7 +249,44 @@ export default defineComponent({
     
     const toc = ref<any[]>([])
     const comments = ref<any[]>([])
-    
+
+    const parseCountValue = (value: string | number) => {
+      if (typeof value === 'number') return value
+      if (!value) return 0
+      const raw = String(value).trim().toLowerCase()
+      if (raw.endsWith('w')) {
+        const num = Number(raw.replace('w', ''))
+        return Number.isNaN(num) ? 0 : Math.round(num * 10000)
+      }
+      if (raw.endsWith('k')) {
+        const num = Number(raw.replace('k', ''))
+        return Number.isNaN(num) ? 0 : Math.round(num * 1000)
+      }
+      const num = Number(raw)
+      return Number.isNaN(num) ? 0 : num
+    }
+
+    const updateAuthorFollowers = (delta: number) => {
+      const current = parseCountValue(post.value.author?.followers ?? 0)
+      const next = Math.max(0, current + delta)
+      post.value.author.followers = next
+    }
+
+    const syncFollowState = async (authorId: number) => {
+      if (!authorId) return
+      try {
+        const response = await blogService.users.getById(authorId)
+        if (response.success && response.data) {
+          isFollowing.value = !!(response.data as any).followed || !!(response.data as any).isFollowed
+          if (response.data.followerCount !== undefined) {
+            post.value.author.followers = response.data.followerCount
+          }
+        }
+      } catch (error) {
+        console.error('获取关注状态失败:', error)
+      }
+    }
+
     const loadPost = async () => {
       const postId = Number(route.params.id)
       if (!postId) {
@@ -289,6 +326,7 @@ export default defineComponent({
           }
           
           generateToc(post.value.content)
+          await syncFollowState(post.value.author.id)
           await loadComments()
         }
       } catch (error) {
@@ -396,7 +434,21 @@ export default defineComponent({
     }
     
     const toggleFollow = async () => {
-      isFollowing.value = !isFollowing.value
+      const authorId = post.value.author?.id
+      if (!authorId) return
+      try {
+        if (isFollowing.value) {
+          await blogService.users.unfollow(authorId)
+          isFollowing.value = false
+          updateAuthorFollowers(-1)
+        } else {
+          await blogService.users.follow(authorId)
+          isFollowing.value = true
+          updateAuthorFollowers(1)
+        }
+      } catch (error) {
+        console.error('关注操作失败:', error)
+      }
     }
     
     const toggleLike = async () => {

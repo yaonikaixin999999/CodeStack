@@ -61,14 +61,14 @@
                 <img src="@/assets/blog/icons/user.svg" alt="个人中心" class="dropdown-icon" />
                 <span>个人中心</span>
               </router-link>
-              <router-link to="/admin/blog/profile" class="dropdown-item">
+              <!-- <router-link to="/admin/blog/profile" class="dropdown-item">
                 <img src="@/assets/blog/icons/bookmark.svg" alt="我的收藏" class="dropdown-icon" />
                 <span>我的收藏</span>
-              </router-link>
-              <router-link to="/admin/blog/profile" class="dropdown-item">
+              </router-link> -->
+              <!-- <router-link to="/admin/blog/profile" class="dropdown-item">
                 <img src="@/assets/blog/icons/settings.svg" alt="设置" class="dropdown-icon" />
                 <span>设置</span>
-              </router-link>
+              </router-link> -->
               <div class="dropdown-divider"></div>
               <button class="dropdown-item logout-btn" @click="handleLogout">
                 <img src="@/assets/blog/icons/close.svg" alt="退出" class="dropdown-icon" />
@@ -198,6 +198,9 @@ export default defineComponent({
 
     const handleLogout = () => {
       userService.logout()
+      blogService.auth.logout()
+      showUserMenu.value = false
+      showMobileMenu.value = false
       router.push('/login')
     }
 
