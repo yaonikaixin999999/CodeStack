@@ -41,9 +41,8 @@
         </router-link>
         
         <div class="user-actions">
-          <button class="action-btn notification-btn" @click="$router.push('/blog/profile')">
+          <button class="action-btn notification-btn" @click="$router.push('/blog/messages')">
             <img src="@/assets/blog/icons/comment.svg" alt="消息" class="action-icon" />
-            <span v-if="unreadCount > 0" class="notification-badge">{{ unreadCount > 99 ? '99+' : unreadCount }}</span>
           </button>
           
           <div class="user-menu" @click="toggleUserMenu">
@@ -111,25 +110,10 @@ export default defineComponent({
     const showUserMenu = ref(false)
     const showMobileMenu = ref(false)
     const currentUser = ref<User | null>(null)
-    const unreadCount = ref(0)
     
     // 获取用户信息
     const loadUserInfo = () => {
       currentUser.value = blogService.auth.getLocalUser()
-    }
-    
-    // 获取未读消息数量
-    const loadUnreadCount = async () => {
-      if (blogService.auth.isLoggedIn()) {
-        try {
-          const response = await blogService.notifications.getUnreadCount()
-          if (response.success) {
-            unreadCount.value = response.data || 0
-          }
-        } catch (error) {
-          console.error('获取未读消息失败:', error)
-        }
-      }
     }
     
     // 用户头像
@@ -170,7 +154,6 @@ export default defineComponent({
     
     onMounted(() => {
       loadUserInfo()
-      loadUnreadCount()
     })
     
     return {
@@ -178,7 +161,6 @@ export default defineComponent({
       showUserMenu,
       showMobileMenu,
       currentUser,
-      unreadCount,
       userAvatar,
       displayName,
       isActive,

@@ -39,7 +39,7 @@
               <img :src="isFollowed ? checkIcon : plusIcon" alt="" class="btn-icon" />
               {{ isFollowed ? '已关注' : '关注' }}
             </button>
-            <button class="action-btn">
+            <button class="action-btn" @click="sendMessage">
               <img src="@/assets/blog/icons/comment.svg" alt="私信" class="btn-icon" />
               私信
             </button>
@@ -251,7 +251,7 @@
 
 <script lang="ts">
 import { defineComponent, ref, computed, onMounted, watch } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import BlogHeader from '@/components/blog/BlogHeader.vue'
 import BlogFooter from '@/components/blog/BlogFooter.vue'
 import { blogService } from '@/services/blogService'
@@ -277,6 +277,7 @@ export default defineComponent({
   },
   setup() {
     const route = useRoute()
+    const router = useRouter()
     
     const loading = ref(true)
     const isOwner = ref(true)
@@ -562,6 +563,13 @@ export default defineComponent({
       }
     }
     
+    // 发送私信
+    const sendMessage = () => {
+      if (userInfo.value.id) {
+        router.push({ path: '/blog/messages', query: { userId: userInfo.value.id.toString() } })
+      }
+    }
+    
     // 监听 tab 切换
     watch(activeTab, async (newTab) => {
       switch (newTab) {
@@ -600,6 +608,7 @@ export default defineComponent({
       skills,
       tags,
       toggleFollow,
+      sendMessage,
       plusIcon,
       checkIcon
     }

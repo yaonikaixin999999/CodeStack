@@ -13,6 +13,7 @@ const BlogWrite = () => import('../views/blog/BlogWrite.vue')
 const BlogCategory = () => import('../views/blog/BlogCategory.vue')
 const BlogSearch = () => import('../views/blog/BlogSearch.vue')
 const BlogProfile = () => import('../views/blog/BlogProfile.vue')
+const BlogMessages = () => import('../views/blog/BlogMessages.vue')
 
 // 导入用户服务
 import { userService } from '@/services/userService'
@@ -84,6 +85,12 @@ const routes: RouteRecordRaw[] = [
     path: '/blog/profile',
     name: 'BlogProfile',
     component: BlogProfile,
+    meta: { requiresAuth: true, isBlog: true }
+  },
+  {
+    path: '/blog/messages',
+    name: 'BlogMessages',
+    component: BlogMessages,
     meta: { requiresAuth: true, isBlog: true }
   }
 ]

@@ -75,11 +75,11 @@
             />
           </div>
           <div class="input-field">
-            <i class="fas fa-phone"></i>
+            <i class="fas fa-envelope"></i>
             <input 
-              type="tel" 
-              placeholder="手机号" 
-              v-model="registerForm.phone" 
+              type="email" 
+              placeholder="邮箱" 
+              v-model="registerForm.email" 
               required
             />
           </div>
@@ -181,7 +181,7 @@ export default {
       },
       registerForm: {
         username: '',
-        phone: '',
+        email: '',
         password: ''
       },
       loginError: '',
@@ -246,7 +246,7 @@ export default {
         const blogResponse = await blogService.auth.register({
           username: this.registerForm.username,
           password: this.registerForm.password,
-          phone: this.registerForm.phone
+          email: this.registerForm.email
         })
         
         if (blogResponse.success) {
@@ -287,20 +287,20 @@ export default {
         return false
       }
       
-      if (this.registerForm.username.length < 2) {
-        this.registerError = '用户名至少2个字符'
+      if (this.registerForm.username.length < 3) {
+        this.registerError = '用户名至少3个字符'
         return false
       }
       
-      if (!this.registerForm.phone.trim()) {
-        this.registerError = '手机号不能为空'
+      if (!this.registerForm.email.trim()) {
+        this.registerError = '邮箱不能为空'
         return false
       }
       
-      // 简单的手机号验证
-      const phoneRegex = /^\d{9,11}$/;
-      if (!phoneRegex.test(this.registerForm.phone)) {
-        this.registerError = '请输入有效的手机号'
+      // 邮箱格式验证
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(this.registerForm.email)) {
+        this.registerError = '请输入有效的邮箱地址'
         return false
       }
       

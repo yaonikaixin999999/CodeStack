@@ -278,6 +278,40 @@ export interface Notification {
     }
 }
 
+// 私信消息相关
+export interface Conversation {
+    otherUserId: number
+    lastMessageContent: string
+    lastMessageAt: string
+    otherUser: {
+        id: number
+        username: string
+        nickname: string
+        avatar: string
+    }
+}
+
+export interface Message {
+    id: number
+    content: string
+    createdAt: string
+    isMine: boolean
+    sender: {
+        id: number
+        username: string
+        nickname: string
+        avatar: string
+    }
+}
+
+// 搜索到的用户
+export interface SearchUser {
+    id: number
+    username: string
+    nickname: string
+    avatar: string
+}
+
 // ============== API 服务 ==============
 
 export const blogService = {
@@ -555,6 +589,50 @@ export const blogService = {
             size?: number
         }): Promise<ApiResponse<PageResponse<User>>> => {
             return api.get(`/users/${userId}/followers`, { params })
+        }
+    },
+
+    // ========== 私信消息相关 ==========
+    messages: {
+        // 发送私信
+        send: async (data: {
+            receiverId: number
+            content: string
+        }): Promise<ApiResponse<Message>> => {
+            return api.post('/messages', data)
+        },
+
+        // 获取会话列表
+        getConversations: async (): Promise<ApiResponse<Conversation[]>> => {
+            return api.get('/messages/conversations')
+        },
+
+        // 获取与指定用户的消息列表
+        getMessages: async (otherUserId: number): Promise<ApiResponse<Message[]>> => {
+            return api.get(`/messages/user/${otherUserId}`)
+        },
+
+        // 获取与指定用户的消息列表（分页）
+        getMessagesPaged: async (otherUserId: number, params?: {
+            page?: number
+            size?: number
+        }): Promise<ApiResponse<PageResponse<Message>>> => {
+            return api.get(`/messages/user/${otherUserId}/paged`, { params })
+        },
+
+        // 删除与指定用户的会话
+        deleteConversation: async (otherUserId: number): Promise<ApiResponse<void>> => {
+            return api.delete(`/messages/user/${otherUserId}`)
+        },
+
+        // 删除单条消息
+        deleteMessage: async (messageId: number): Promise<ApiResponse<void>> => {
+            return api.delete(`/messages/${messageId}`)
+        },
+
+        // 搜索用户（用于发起新私信）
+        searchUsers: async (keyword: string): Promise<ApiResponse<SearchUser[]>> => {
+            return api.get('/messages/search-users', { params: { keyword } })
         }
     }
 }
