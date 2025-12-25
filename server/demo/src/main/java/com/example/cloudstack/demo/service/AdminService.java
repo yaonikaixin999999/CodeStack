@@ -149,21 +149,54 @@ public class AdminService {
         return data;
     }
 
-    public List<Map<String, Object>> listPosts(Integer status, Integer limit) {
+    public List<Map<String, Object>> listPosts(Integer status, Integer limit, String q) {
+        String keyword = q != null ? q.trim() : "";
+        boolean hasKeyword = !keyword.isBlank();
+
         List<Post> posts = postRepository.findAll(PageRequest.of(0, limit != null ? limit : 50)).getContent();
-        return posts.stream()
-                .filter(p -> status == null || Objects.equals(p.getStatus(), status))
-                .map(p -> {
-                    Map<String, Object> m = new LinkedHashMap<>();
-                    m.put("id", p.getId());
-                    m.put("title", p.getTitle());
-                    m.put("status", p.getStatus());
-                    m.put("statusLabel", statusLabel(p.getStatus()));
-                    m.put("userId", p.getUserId());
-                    m.put("updatedAt", p.getUpdatedAt() != null ? p.getUpdatedAt().toString() : null);
-                    m.put("createdAt", p.getCreatedAt() != null ? p.getCreatedAt().toString() : null);
-                    return m;
-                }).collect(Collectors.toList());
+        List<Map<String, Object>> result = new ArrayList<>();
+
+        for (Post p : posts) {
+            if (status != null && !Objects.equals(p.getStatus(), status)) {
+                continue;
+            }
+
+            User author = null;
+            if (p.getUserId() != null) {
+                author = userRepository.findById(p.getUserId()).orElse(null);
+            }
+
+            if (hasKeyword) {
+                String title = p.getTitle() != null ? p.getTitle() : "";
+                boolean match = title.contains(keyword);
+
+                if (!match && author != null) {
+                    String username = author.getUsername() != null ? author.getUsername() : "";
+                    String nickname = author.getNickname() != null ? author.getNickname() : "";
+                    String email = author.getEmail() != null ? author.getEmail() : "";
+                    match = username.contains(keyword) || nickname.contains(keyword) || email.contains(keyword);
+                }
+
+                if (!match) {
+                    continue;
+                }
+            }
+
+            Map<String, Object> m = new LinkedHashMap<>();
+            m.put("id", p.getId());
+            m.put("title", p.getTitle());
+            m.put("status", p.getStatus());
+            m.put("statusLabel", statusLabel(p.getStatus()));
+            m.put("userId", p.getUserId());
+            m.put("username", author != null ? author.getUsername() : null);
+            m.put("nickname", author != null ? author.getNickname() : null);
+            m.put("email", author != null ? author.getEmail() : null);
+            m.put("updatedAt", p.getUpdatedAt() != null ? p.getUpdatedAt().toString() : null);
+            m.put("createdAt", p.getCreatedAt() != null ? p.getCreatedAt().toString() : null);
+            result.add(m);
+        }
+
+        return result;
     }
 
     public List<Map<String, Object>> listComments(Integer status, Integer limit) {
@@ -220,8 +253,23 @@ public class AdminService {
     }
 
     public List<Map<String, Object>> listUsers(Map<String, Object> params) {
+        Object qObj = params != null ? params.get("q") : null;
+        String keyword = qObj != null ? String.valueOf(qObj).trim() : "";
+        boolean hasKeyword = !keyword.isBlank();
+
         List<User> users = userRepository.findAll(PageRequest.of(0, 100)).getContent();
-        return users.stream().map(u -> {
+        List<Map<String, Object>> result = new ArrayList<>();
+
+        for (User u : users) {
+            if (hasKeyword) {
+                String username = u.getUsername() != null ? u.getUsername() : "";
+                String nickname = u.getNickname() != null ? u.getNickname() : "";
+                String email = u.getEmail() != null ? u.getEmail() : "";
+                if (!username.contains(keyword) && !nickname.contains(keyword) && !email.contains(keyword)) {
+                    continue;
+                }
+            }
+
             Map<String, Object> m = new LinkedHashMap<>();
             m.put("id", u.getId());
             m.put("username", u.getUsername());
@@ -230,8 +278,10 @@ public class AdminService {
             m.put("status", u.getStatus());
             m.put("lastLoginAt", u.getLastLoginAt() != null ? u.getLastLoginAt().toString() : null);
             m.put("avatar", u.getAvatar());
-            return m;
-        }).collect(Collectors.toList());
+            result.add(m);
+        }
+
+        return result;
     }
 
     @Transactional

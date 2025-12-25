@@ -37,7 +37,7 @@ public class User {
     @Column(length = 50)
     private String nickname;
 
-    @Column(length = 500)
+    @Column(columnDefinition = "MEDIUMTEXT")
     private String avatar;
 
     @Column(columnDefinition = "TEXT")

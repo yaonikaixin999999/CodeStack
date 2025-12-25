@@ -192,6 +192,7 @@ public class PostService {
             Long authorId, String keyword, String sort, Long currentUserId) {
         Page<Post> posts;
         PageRequest pageRequest = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
+        String safeKeyword = keyword != null ? keyword.trim() : null;
 
         // 根据排序参数调整
         if (sort != null && !sort.isEmpty()) {
@@ -210,8 +211,8 @@ public class PostService {
             posts = postRepository.findByTagId(tagId, pageRequest);
         } else if (authorId != null) {
             posts = postRepository.findByUserIdAndDeletedAtIsNull(authorId, pageRequest);
-        } else if (keyword != null && !keyword.isEmpty()) {
-            posts = postRepository.searchPosts(keyword, pageRequest);
+        } else if (safeKeyword != null && !safeKeyword.isEmpty()) {
+            posts = postRepository.searchPosts(safeKeyword, pageRequest);
         } else {
             posts = postRepository.findPublishedPosts(pageRequest);
         }
@@ -277,7 +278,30 @@ public class PostService {
      * 搜索文章
      */
     public PageResponse<PostListDTO> searchPosts(String keyword, int page, int size, Long currentUserId) {
-        Page<Post> posts = postRepository.searchPosts(keyword, PageRequest.of(page, size));
+        String safeKeyword = keyword != null ? keyword.trim() : "";
+        if (safeKeyword.isEmpty()) {
+            return PageResponse.of(List.of(), page, size, 0);
+        }
+
+        Page<Post> posts = postRepository.searchPosts(safeKeyword, PageRequest.of(page, size));
+
+        List<PostListDTO> postDTOs = posts.getContent().stream()
+                .map(this::convertToListDTO)
+                .collect(Collectors.toList());
+
+        return PageResponse.of(postDTOs, page, size, posts.getTotalElements());
+    }
+
+    public PageResponse<PostListDTO> searchPostsForGlobal(String keyword, int page, int size, Long currentUserId,
+            boolean isAdmin) {
+        String safeKeyword = keyword != null ? keyword.trim() : "";
+        if (safeKeyword.isEmpty()) {
+            return PageResponse.of(List.of(), page, size, 0);
+        }
+
+        long safeUserId = currentUserId != null ? currentUserId : -1L;
+        Page<Post> posts = postRepository.searchPostsForGlobal(safeKeyword, safeUserId, isAdmin,
+                PageRequest.of(page, size));
 
         List<PostListDTO> postDTOs = posts.getContent().stream()
                 .map(this::convertToListDTO)
@@ -461,6 +485,7 @@ public class PostService {
                 .commentCount(post.getCommentCount())
                 .isTop(post.getIsTop())
                 .isFeatured(post.getIsFeatured())
+                .status(post.getStatus())
                 .publishedAt(post.getPublishedAt())
                 .createdAt(post.getCreatedAt())
                 .build();

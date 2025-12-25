@@ -39,8 +39,9 @@ public class AdminController {
     @GetMapping("/posts")
     public ResponseEntity<ApiResponse<List<Map<String, Object>>>> listPosts(
             @RequestParam(required = false) Integer status,
-            @RequestParam(required = false) Integer limit) {
-        return ResponseEntity.ok(ApiResponse.success(adminService.listPosts(status, limit)));
+            @RequestParam(required = false) Integer limit,
+            @RequestParam(required = false) String q) {
+        return ResponseEntity.ok(ApiResponse.success(adminService.listPosts(status, limit, q)));
     }
 
     @GetMapping("/comments")
@@ -110,7 +111,7 @@ public class AdminController {
 
     @PostMapping(value = "/avatar", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ApiResponse<String>> uploadAvatar(@RequestParam("file") MultipartFile file,
-                                                            @RequestAttribute("userId") Long userId) throws Exception {
+            @RequestAttribute("userId") Long userId) throws Exception {
         String url = adminService.uploadAvatar(file, userId);
         return ResponseEntity.ok(ApiResponse.success(url));
     }

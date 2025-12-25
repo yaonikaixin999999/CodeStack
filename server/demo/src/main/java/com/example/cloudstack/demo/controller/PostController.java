@@ -3,15 +3,19 @@ package com.example.cloudstack.demo.controller;
 import com.example.cloudstack.demo.dto.ApiResponse;
 import com.example.cloudstack.demo.dto.common.PageResponse;
 import com.example.cloudstack.demo.dto.post.*;
+import com.example.cloudstack.demo.dto.user.UserDTO;
 import com.example.cloudstack.demo.service.BookmarkService;
 import com.example.cloudstack.demo.service.LikeService;
+import com.example.cloudstack.demo.service.BlogUserService;
 import com.example.cloudstack.demo.service.PostService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 文章控制器
@@ -24,6 +28,7 @@ public class PostController {
     private final PostService postService;
     private final LikeService likeService;
     private final BookmarkService bookmarkService;
+    private final BlogUserService blogUserService;
 
     /**
      * 获取文章列表
@@ -125,6 +130,27 @@ public class PostController {
         try {
             postService.deletePost(id, userId, isAdmin != null && isAdmin);
             return ResponseEntity.ok(ApiResponse.successMsg("删除成功"));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        }
+    }
+
+    @GetMapping("/global-search")
+    public ResponseEntity<ApiResponse<Map<String, Object>>> globalSearch(
+            @RequestParam String keyword,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestAttribute(value = "userId", required = false) Long currentUserId,
+            @RequestAttribute(value = "isAdmin", required = false) Boolean isAdmin) {
+        try {
+            PageResponse<PostListDTO> posts = postService.searchPostsForGlobal(keyword, page, size, currentUserId,
+                    isAdmin != null && isAdmin);
+            PageResponse<UserDTO> users = blogUserService.searchUsers(keyword, page, size, currentUserId);
+
+            Map<String, Object> data = new LinkedHashMap<>();
+            data.put("posts", posts);
+            data.put("users", users);
+            return ResponseEntity.ok(ApiResponse.success(data));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
         }

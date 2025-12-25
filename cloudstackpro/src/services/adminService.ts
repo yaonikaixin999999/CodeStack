@@ -7,10 +7,10 @@ const api = axios.create({
 })
 
 api.interceptors.request.use(config => {
-  const token = localStorage.getItem('token')
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`
-  }
+  const adminToken = localStorage.getItem('token')
+  const blogToken = localStorage.getItem('blog_token')
+  const token = adminToken || blogToken
+  if (token) config.headers.Authorization = `Bearer ${token}`
   return config
 })
 
@@ -28,6 +28,9 @@ export interface AdminPost {
   status?: number
   statusLabel?: string
   userId?: number
+  username?: string
+  nickname?: string
+  email?: string
   updatedAt?: string
   createdAt?: string
 }
@@ -95,7 +98,7 @@ export const adminService = {
     return res.data
   },
 
-  async listPosts(params: { status?: number; limit?: number } = {}) {
+  async listPosts(params: { status?: number; limit?: number; q?: string } = {}) {
     const res = await api.get<{ success: boolean; data?: AdminPost[]; message?: string }>('/posts', { params })
     return res.data
   },

@@ -18,10 +18,10 @@ const BlogProfile = () => import('../views/blog/BlogProfile.vue')
 const AdminDashboard = () => import('../views/admin/AdminDashboard.vue')
 const AdminModeration = () => import('../views/admin/AdminModeration.vue')
 const AdminUserModeration = () => import('../views/admin/AdminUserModeration.vue')
-const AdminProfile = () => import('../views/admin/AdminProfile.vue')
 const AdminBlog = () => import('../views/admin/AdminBlog.vue')
 const AdminBlogPost = () => import('../views/admin/AdminBlogPost.vue')
 const AdminBlogProfile = () => import('../views/admin/AdminBlogProfile.vue')
+const AdminBlogSearch = () => import('../views/admin/AdminBlogSearch.vue')
 
 // 聊天
 const Chat = () => import('../views/Chat.vue')
@@ -69,8 +69,8 @@ const routes: RouteRecordRaw[] = [
   {
     path: '/admin/profile',
     name: 'AdminProfile',
-    component: AdminProfile,
-    meta: { requiresAuth: true, requiresAdmin: true }
+    component: AdminBlogProfile,
+    meta: { requiresAuth: true, requiresAdmin: true, isBlog: true }
   },
   {
     path: '/admin/blog',
@@ -88,6 +88,12 @@ const routes: RouteRecordRaw[] = [
     path: '/admin/blog/profile/:id?',
     name: 'AdminBlogProfile',
     component: AdminBlogProfile,
+    meta: { requiresAuth: true, requiresAdmin: true, isBlog: true }
+  },
+  {
+    path: '/admin/blog/search',
+    name: 'AdminBlogSearch',
+    component: AdminBlogSearch,
     meta: { requiresAuth: true, requiresAdmin: true, isBlog: true }
   },
   // 聊天

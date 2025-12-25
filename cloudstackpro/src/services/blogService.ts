@@ -165,6 +165,7 @@ export interface PostListItem {
     isFeatured: boolean
     publishedAt: string
     createdAt?: string
+    status?: number
     content?: string
     liked?: boolean
     bookmarked?: boolean
@@ -386,6 +387,13 @@ export const blogService = {
             size?: number
         }): Promise<ApiResponse<PageResponse<PostListItem>>> => {
             return api.get('/posts/search', { params: { keyword, ...params } })
+        },
+
+        globalSearch: async (keyword: string, params?: {
+            page?: number
+            size?: number
+        }): Promise<ApiResponse<{ posts: PageResponse<PostListItem>; users: PageResponse<User> }>> => {
+            return api.get('/posts/global-search', { params: { keyword, ...params } })
         },
 
         // 点赞文章

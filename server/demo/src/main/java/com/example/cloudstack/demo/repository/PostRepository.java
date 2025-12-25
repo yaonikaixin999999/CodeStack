@@ -33,8 +33,33 @@ public interface PostRepository extends JpaRepository<Post, Long> {
     Page<Post> findByCategoryId(@Param("categoryId") Long categoryId, Pageable pageable);
 
     // 搜索文章
-    @Query("SELECT p FROM Post p WHERE (p.title LIKE %:keyword% OR p.excerpt LIKE %:keyword%) AND p.status = 1 AND p.deletedAt IS NULL")
+    @Query("""
+            SELECT p FROM Post p
+            WHERE (p.title LIKE %:keyword%
+                OR p.excerpt LIKE %:keyword%
+                OR p.content LIKE %:keyword%
+                OR p.contentHtml LIKE %:keyword%)
+              AND p.status = 1
+              AND p.deletedAt IS NULL
+            """)
     Page<Post> searchPosts(@Param("keyword") String keyword, Pageable pageable);
+
+    @Query("""
+            SELECT p FROM Post p
+            WHERE (p.title LIKE %:keyword%
+                OR p.excerpt LIKE %:keyword%
+                OR p.content LIKE %:keyword%
+                OR p.contentHtml LIKE %:keyword%)
+              AND p.deletedAt IS NULL
+              AND (
+                    p.status = 1
+                 OR (p.status = 2 AND (:isAdmin = true OR p.userId = :userId))
+              )
+            """)
+    Page<Post> searchPostsForGlobal(@Param("keyword") String keyword,
+                                    @Param("userId") Long userId,
+                                    @Param("isAdmin") boolean isAdmin,
+                                    Pageable pageable);
 
     // 查询精选文章
     @Query("SELECT p FROM Post p WHERE p.isFeatured = true AND p.status = 1 AND p.deletedAt IS NULL ORDER BY p.publishedAt DESC")
