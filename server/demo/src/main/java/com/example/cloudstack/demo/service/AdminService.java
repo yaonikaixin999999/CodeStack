@@ -9,6 +9,7 @@ import com.example.cloudstack.demo.repository.CommentRepository;
 import com.example.cloudstack.demo.repository.PostRepository;
 import com.example.cloudstack.demo.repository.UserRepository;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -200,9 +201,12 @@ public class AdminService {
     }
 
     public List<Map<String, Object>> listComments(Integer status, Integer limit) {
-        List<Comment> comments = commentRepository.findAll(PageRequest.of(0, limit != null ? limit : 50)).getContent();
+        int safeLimit = limit != null ? limit : 50;
+        PageRequest pageRequest = PageRequest.of(0, safeLimit, Sort.by(Sort.Direction.DESC, "createdAt"));
+        List<Comment> comments = status == null
+                ? commentRepository.findAll(pageRequest).getContent()
+                : commentRepository.findByStatus(status, pageRequest).getContent();
         return comments.stream()
-                .filter(c -> status == null || Objects.equals(c.getStatus(), status))
                 .map(c -> {
                     Map<String, Object> m = new LinkedHashMap<>();
                     m.put("id", c.getId());

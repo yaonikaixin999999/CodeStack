@@ -29,6 +29,8 @@ public interface CommentRepository extends JpaRepository<Comment, Long> {
     // 查询用户的评论
     Page<Comment> findByUserIdAndStatus(Long userId, Integer status, Pageable pageable);
 
+    Page<Comment> findByStatus(Integer status, Pageable pageable);
+
     // 统计文章评论数
     @Query("SELECT COUNT(c) FROM Comment c WHERE c.postId = :postId AND c.status = 1")
     long countByPostId(@Param("postId") Long postId);
