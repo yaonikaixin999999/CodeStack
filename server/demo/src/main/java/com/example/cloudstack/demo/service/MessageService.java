@@ -17,9 +17,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.HashSet;
+import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
-import java.util.Set;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
@@ -58,29 +59,72 @@ public class MessageService {
     }
 
     /**
+     * 系统公告群发
+     */
+    @Transactional
+    public int broadcastAnnouncement(Long senderId, String title, String content, String type) {
+        String messageContent = formatAnnouncement(title, content, type);
+        if (messageContent.isBlank()) {
+            throw new RuntimeException("公告内容不能为空");
+        }
+
+        List<User> users = userRepository.findAll();
+        List<Message> messages = new ArrayList<>();
+        for (User user : users) {
+            if (user.getId().equals(senderId)) {
+                continue;
+            }
+            messages.add(Message.builder()
+                    .senderId(senderId)
+                    .receiverId(user.getId())
+                    .content(messageContent)
+                    .build());
+        }
+        if (!messages.isEmpty()) {
+            messageRepository.saveAll(messages);
+        }
+        return messages.size();
+    }
+
+    /**
      * 获取会话列表
      */
-    public List<ConversationDTO> getConversations(Long userId) {
+    public List<ConversationDTO> getConversations(Long userId, Boolean isAdmin) {
+        boolean isAdminUser = Boolean.TRUE.equals(isAdmin);
         List<Message> latestMessages = messageRepository.findConversationList(userId);
 
-        return latestMessages.stream()
-                .map(msg -> {
-                    Long otherUserId = msg.getSenderId().equals(userId) ? msg.getReceiverId() : msg.getSenderId();
-                    User otherUser = userRepository.findById(otherUserId).orElse(null);
+        Map<Long, Message> latestMessageByUser = new HashMap<>();
+        for (Message msg : latestMessages) {
+            Long otherUserId = msg.getSenderId().equals(userId) ? msg.getReceiverId() : msg.getSenderId();
+            latestMessageByUser.put(otherUserId, msg);
+        }
 
-                    return ConversationDTO.builder()
-                            .otherUserId(otherUserId)
-                            .lastMessageContent(truncateContent(msg.getContent()))
-                            .lastMessageAt(msg.getCreatedAt())
-                            .otherUser(otherUser != null ? UserDTO.builder()
-                                    .id(otherUser.getId())
-                                    .username(otherUser.getUsername())
-                                    .nickname(otherUser.getNickname())
-                                    .avatar(otherUser.getAvatar())
-                                    .build() : null)
-                            .build();
-                })
-                .collect(Collectors.toList());
+        List<User> users = isAdminUser
+                ? userRepository.findAll()
+                : userRepository.findAllById(latestMessageByUser.keySet());
+        Map<Long, User> userMap = users.stream()
+                .collect(Collectors.toMap(User::getId, u -> u));
+
+        List<ConversationDTO> result = new ArrayList<>();
+        if (isAdminUser) {
+            for (User user : users) {
+                if (user.getId().equals(userId)) {
+                    continue;
+                }
+                Message msg = latestMessageByUser.get(user.getId());
+                result.add(buildConversation(user.getId(), user, msg));
+            }
+        } else {
+            for (Map.Entry<Long, Message> entry : latestMessageByUser.entrySet()) {
+                Long otherUserId = entry.getKey();
+                User otherUser = userMap.get(otherUserId);
+                result.add(buildConversation(otherUserId, otherUser, entry.getValue()));
+            }
+        }
+
+        result.sort(Comparator.comparing(ConversationDTO::getLastMessageAt,
+                Comparator.nullsLast(Comparator.reverseOrder())));
+        return result;
     }
 
     /**
@@ -180,6 +224,43 @@ public class MessageService {
                         .username(sender.getUsername())
                         .nickname(sender.getNickname())
                         .avatar(sender.getAvatar())
+                        .build() : null)
+                .build();
+    }
+
+    private String formatAnnouncement(String title, String content, String type) {
+        String safeTitle = title != null ? title.trim() : "";
+        String safeContent = content != null ? content.trim() : "";
+        String safeType = type != null && !type.trim().isEmpty() ? type.trim() : "系统";
+
+        if (safeTitle.isEmpty() && safeContent.isEmpty()) {
+            return "";
+        }
+
+        StringBuilder sb = new StringBuilder();
+        sb.append("【").append(safeType).append("公告】");
+        if (!safeTitle.isEmpty()) {
+            sb.append(' ').append(safeTitle);
+        }
+        if (!safeContent.isEmpty()) {
+            sb.append('\n');
+            sb.append("----------------");
+            sb.append('\n');
+            sb.append(safeContent);
+        }
+        return sb.toString().trim();
+    }
+
+    private ConversationDTO buildConversation(Long otherUserId, User otherUser, Message message) {
+        return ConversationDTO.builder()
+                .otherUserId(otherUserId)
+                .lastMessageContent(message != null ? truncateContent(message.getContent()) : null)
+                .lastMessageAt(message != null ? message.getCreatedAt() : null)
+                .otherUser(otherUser != null ? UserDTO.builder()
+                        .id(otherUser.getId())
+                        .username(otherUser.getUsername())
+                        .nickname(otherUser.getNickname())
+                        .avatar(otherUser.getAvatar())
                         .build() : null)
                 .build();
     }

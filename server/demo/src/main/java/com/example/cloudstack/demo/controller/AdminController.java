@@ -2,6 +2,7 @@ package com.example.cloudstack.demo.controller;
 
 import com.example.cloudstack.demo.dto.ApiResponse;
 import com.example.cloudstack.demo.service.AdminService;
+import com.example.cloudstack.demo.service.MessageService;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -16,9 +17,11 @@ import java.util.List;
 public class AdminController {
 
     private final AdminService adminService;
+    private final MessageService messageService;
 
-    public AdminController(AdminService adminService) {
+    public AdminController(AdminService adminService, MessageService messageService) {
         this.adminService = adminService;
+        this.messageService = messageService;
     }
 
     @GetMapping("/dashboard")
@@ -82,8 +85,16 @@ public class AdminController {
     }
 
     @PostMapping("/announcements")
-    public ResponseEntity<ApiResponse<Void>> createAnnouncement(@RequestBody Map<String, String> payload) {
-        return ResponseEntity.ok(ApiResponse.successMsg("发布成功"));
+    public ResponseEntity<ApiResponse<Map<String, Object>>> createAnnouncement(
+            @RequestBody Map<String, String> payload,
+            @RequestAttribute("userId") Long userId) {
+        String title = payload != null ? payload.get("title") : null;
+        String content = payload != null ? payload.get("content") : null;
+        String type = payload != null ? payload.get("type") : null;
+        int sentCount = messageService.broadcastAnnouncement(userId, title, content, type);
+        Map<String, Object> result = new java.util.HashMap<>();
+        result.put("sentCount", sentCount);
+        return ResponseEntity.ok(ApiResponse.success("发布成功", result));
     }
 
     @GetMapping("/users")

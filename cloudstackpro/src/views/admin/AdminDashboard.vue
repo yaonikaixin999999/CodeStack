@@ -798,7 +798,7 @@ const goToBlog = () => {
 }
 
 const goToChat = () => {
-  router.push('/chat')
+  router.push('/admin/messages')
 }
 
 const goToWrite = () => {

@@ -20,7 +20,7 @@ CREATE TABLE IF NOT EXISTS `users` (
     `email` VARCHAR(100) NOT NULL COMMENT '邮箱',
     `password` VARCHAR(255) NOT NULL COMMENT '密码(加密存储)',
     `nickname` VARCHAR(50) DEFAULT NULL COMMENT '昵称',
-    `avatar` VARCHAR(500) DEFAULT NULL COMMENT '头像URL',
+    `avatar` MEDIUMTEXT DEFAULT NULL COMMENT '头像URL',
     `bio` TEXT DEFAULT NULL COMMENT '个人简介',
     `profession` VARCHAR(100) DEFAULT NULL COMMENT '职业',
     `location` VARCHAR(100) DEFAULT NULL COMMENT '所在地',

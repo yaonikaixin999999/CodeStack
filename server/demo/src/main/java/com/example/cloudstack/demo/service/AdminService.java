@@ -9,6 +9,7 @@ import com.example.cloudstack.demo.repository.CommentRepository;
 import com.example.cloudstack.demo.repository.PostRepository;
 import com.example.cloudstack.demo.repository.UserRepository;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -221,6 +222,7 @@ public class AdminService {
                     m.put("username", author != null ? author.getUsername() : null);
                     m.put("id", c.getId());
                     m.put("userId", c.getUserId());
+                    m.put("username", author != null ? author.getUsername() : null);
                     m.put("content", c.getContent());
                     m.put("createdAt", c.getCreatedAt() != null ? c.getCreatedAt().toString() : null);
                     return m;

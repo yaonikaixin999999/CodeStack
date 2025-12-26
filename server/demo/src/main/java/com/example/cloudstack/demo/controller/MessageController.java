@@ -46,9 +46,10 @@ public class MessageController {
      */
     @GetMapping("/conversations")
     public ResponseEntity<ApiResponse<List<ConversationDTO>>> getConversations(
-            @RequestAttribute("userId") Long userId) {
+            @RequestAttribute("userId") Long userId,
+            @RequestAttribute(value = "isAdmin", required = false) Boolean isAdmin) {
         try {
-            List<ConversationDTO> conversations = messageService.getConversations(userId);
+            List<ConversationDTO> conversations = messageService.getConversations(userId, isAdmin);
             return ResponseEntity.ok(ApiResponse.success(conversations));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
