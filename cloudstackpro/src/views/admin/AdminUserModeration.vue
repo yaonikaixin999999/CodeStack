@@ -73,10 +73,10 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref, watch } from 'vue'
+import { onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { userService } from '@/services/userService'
-import { adminService, type AdminUser } from '@/services/adminService'
+import { adminService, type AdminUser, type UserStatusChangeEvent } from '@/services/adminService'
 import AdminHeader from '@/components/admin/AdminHeader.vue'
 import AdminHero from '@/components/admin/AdminHero.vue'
 
@@ -88,6 +88,7 @@ const isAdmin = currentUser?.isAdmin || false
 const heroKeyword = ref('')
 const users = ref<AdminUser[]>([])
 const errorMessage = ref('')
+const sse = ref<EventSource | null>(null)
 
 const goProfile = (user?: AdminUser) => {
   if (!user?.id) return
@@ -107,6 +108,41 @@ const loadUsers = async (keyword?: string) => {
   } catch (e) {
     console.error('加载用户失败', e)
     errorMessage.value = '加载用户失败，请检查登录状态或网络'
+  }
+}
+
+const handleUserStatusEvent = (evt: MessageEvent) => {
+  try {
+    const data = JSON.parse(evt.data) as UserStatusChangeEvent
+    const idx = users.value.findIndex(u => u.id === data.userId)
+    if (idx >= 0) {
+      users.value[idx] = { ...users.value[idx], status: data.status, role: data.role || users.value[idx].role }
+    }
+  } catch (e) {
+    // ignore
+  }
+}
+
+const setupSse = () => {
+  if (!isAdmin) return
+  const token = localStorage.getItem('token')
+  if (!token) return
+  try {
+    sse.value = adminService.createEventSource(token)
+    sse.value.addEventListener('user-status-changed', handleUserStatusEvent)
+    sse.value.onerror = () => {
+      sse.value?.close()
+      sse.value = null
+    }
+  } catch (e) {
+    console.warn('SSE 初始化失败', e)
+  }
+}
+
+const teardownSse = () => {
+  if (sse.value) {
+    sse.value.close()
+    sse.value = null
   }
 }
 
@@ -144,6 +180,7 @@ onMounted(() => {
     const q = typeof route.query.q === 'string' ? route.query.q : ''
     heroKeyword.value = q
     loadUsers(q)
+    setupSse()
   }
 })
 
@@ -156,6 +193,10 @@ watch(
     loadUsers(keyword)
   }
 )
+
+onUnmounted(() => {
+  teardownSse()
+})
 </script>
 
 <style scoped>

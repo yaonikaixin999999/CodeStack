@@ -7,10 +7,13 @@ import com.example.cloudstack.demo.dto.user.RegisterRequest;
 import com.example.cloudstack.demo.dto.user.UserDTO;
 import com.example.cloudstack.demo.dto.user.UserUpdateRequest;
 import com.example.cloudstack.demo.service.BlogUserService;
+import com.example.cloudstack.demo.service.AdminService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -24,6 +27,7 @@ import java.util.Map;
 public class AuthController {
 
     private final BlogUserService userService;
+    private final AdminService adminService;
 
     /**
      * 获取认证端点信息
@@ -79,6 +83,15 @@ public class AuthController {
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
         }
+    }
+
+    /**
+     * 用户 SSE 流 (状态变更推送)
+     * GET /api/blog/auth/stream?token=xxx
+     */
+    @GetMapping(value = "/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public SseEmitter stream(@RequestAttribute("userId") Long userId) {
+        return adminService.subscribeUser(userId);
     }
 
     /**

@@ -42,30 +42,50 @@
                 </tr>
               </thead>
               <tbody>
-                <tr v-for="post in pendingPosts" :key="post.id">
-                  <td class="title-cell">
-                    <span class="dot" />
-                    <router-link :to="`/admin/blog/post/${post.id}`" class="link-title">
-                      {{ post.title }}
-                    </router-link>
-                  </td>
-                  <td>
-                    <router-link
-                      v-if="post.userId"
-                      :to="{ path: `/admin/blog/profile/${post.userId}`, query: { from: 'moderation' } }"
-                      class="link-user"
-                    >
-                      {{ post.nickname || post.username || `用户 ${post.userId}` }}
-                    </router-link>
-                    <span v-else>—</span>
-                  </td>
-                  <td>—</td>
-                  <td>{{ post.createdAt || '—' }}</td>
-                  <td class="row-actions">
-                    <button class="pill-btn ghost" @click="approvePost(post.id)">通过</button>
-                    <button class="pill-btn danger" @click="rejectPost(post.id)">驳回</button>
-                  </td>
-                </tr>
+                <template v-for="post in pendingPosts" :key="post.id">
+                  <tr>
+                    <td class="title-cell">
+                      <span class="dot" />
+                      <router-link :to="`/admin/blog/post/${post.id}`" class="link-title">
+                        {{ post.title }}
+                      </router-link>
+                    </td>
+                    <td>
+                      <router-link
+                        v-if="post.userId"
+                        :to="{ path: `/admin/blog/profile/${post.userId}`, query: { from: 'moderation' } }"
+                        class="link-user"
+                      >
+                        {{ post.nickname || post.username || `用户 ${post.userId}` }}
+                      </router-link>
+                      <span v-else>—</span>
+                    </td>
+                    <td>—</td>
+                    <td>{{ post.createdAt || '—' }}</td>
+                    <td class="row-actions">
+                      <button class="pill-btn ghost" :disabled="aiPostLoading[post.id]" @click="reviewPostWithAi(post.id)">
+                        {{ aiPostLoading[post.id] ? 'AI审核中...' : 'AI审核' }}
+                      </button>
+                      <button class="pill-btn ghost" @click="approvePost(post.id)">通过</button>
+                      <button class="pill-btn danger" @click="rejectPost(post.id)">驳回</button>
+                    </td>
+                  </tr>
+                  <tr v-if="aiPostReviews[post.id]" class="ai-row">
+                    <td colspan="5">
+                      <div class="ai-result">
+                        <span class="ai-badge" :class="getDecisionClass(aiPostReviews[post.id].decision)">
+                          AI建议：{{ getDecisionLabel(aiPostReviews[post.id].decision) }}
+                        </span>
+                        <span v-if="aiPostReviews[post.id].matchedKeywords?.length">
+                          命中关键词：{{ aiPostReviews[post.id].matchedKeywords?.join('、') }}
+                        </span>
+                        <span v-if="aiPostReviews[post.id].reasons?.length">
+                          原因：{{ formatReasons(aiPostReviews[post.id].reasons) }}
+                        </span>
+                      </div>
+                    </td>
+                  </tr>
+                </template>
                 <tr v-if="pendingPosts.length === 0">
                   <td colspan="5" class="empty-cell">暂无待审核文章</td>
                 </tr>
@@ -92,24 +112,44 @@
                 </tr>
               </thead>
               <tbody>
-                <tr v-for="comment in pendingComments" :key="comment.id">
-                  <td>
-                    <router-link
-                      v-if="comment.userId"
-                      :to="{ path: `/admin/blog/profile/${comment.userId}`, query: { from: 'moderation' } }"
-                      class="link-user"
-                    >
-                      {{ comment.username }}
-                    </router-link>
-                    <span v-else>—</span>
-                  </td>
-                  <td class="truncate">{{ comment.content }}</td>
-                  <td>{{ comment.createdAt || '—' }}</td>
-                  <td class="row-actions">
-                    <button class="pill-btn ghost" @click="approveComment(comment.id)">通过</button>
-                    <button class="pill-btn danger" @click="deleteComment(comment.id)">删除</button>
-                  </td>
-                </tr>
+                <template v-for="comment in pendingComments" :key="comment.id">
+                  <tr>
+                    <td>
+                      <router-link
+                        v-if="comment.userId"
+                        :to="{ path: `/admin/blog/profile/${comment.userId}`, query: { from: 'moderation' } }"
+                        class="link-user"
+                      >
+                        {{ comment.username }}
+                      </router-link>
+                      <span v-else>—</span>
+                    </td>
+                    <td class="truncate">{{ comment.content }}</td>
+                    <td>{{ comment.createdAt || '—' }}</td>
+                    <td class="row-actions">
+                      <button class="pill-btn ghost" :disabled="aiCommentLoading[comment.id]" @click="reviewCommentWithAi(comment.id)">
+                        {{ aiCommentLoading[comment.id] ? 'AI审核中...' : 'AI审核' }}
+                      </button>
+                      <button class="pill-btn ghost" @click="approveComment(comment.id)">通过</button>
+                      <button class="pill-btn danger" @click="deleteComment(comment.id)">删除</button>
+                    </td>
+                  </tr>
+                  <tr v-if="aiCommentReviews[comment.id]" class="ai-row">
+                    <td colspan="4">
+                      <div class="ai-result">
+                        <span class="ai-badge" :class="getDecisionClass(aiCommentReviews[comment.id].decision)">
+                          AI建议：{{ getDecisionLabel(aiCommentReviews[comment.id].decision) }}
+                        </span>
+                        <span v-if="aiCommentReviews[comment.id].matchedKeywords?.length">
+                          命中关键词：{{ aiCommentReviews[comment.id].matchedKeywords?.join('、') }}
+                        </span>
+                        <span v-if="aiCommentReviews[comment.id].reasons?.length">
+                          原因：{{ formatReasons(aiCommentReviews[comment.id].reasons) }}
+                        </span>
+                      </div>
+                    </td>
+                  </tr>
+                </template>
                 <tr v-if="pendingComments.length === 0">
                   <td colspan="4" class="empty-cell">暂无待审核评论</td>
                 </tr>
@@ -126,7 +166,7 @@
 import { onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { userService } from '@/services/userService'
-import { adminService, type AdminComment, type AdminPost } from '@/services/adminService'
+import { adminService, type AdminComment, type AdminPost, type AiModerationResult, type ModerationDecision } from '@/services/adminService'
 import AdminHeader from '@/components/admin/AdminHeader.vue'
 import AdminHero from '@/components/admin/AdminHero.vue'
 
@@ -138,6 +178,10 @@ const heroKeyword = ref('')
 const errorMessage = ref('')
 const pendingPosts = ref<AdminPost[]>([])
 const pendingComments = ref<AdminComment[]>([])
+const aiPostReviews = ref<Record<number, AiModerationResult>>({})
+const aiCommentReviews = ref<Record<number, AiModerationResult>>({})
+const aiPostLoading = ref<Record<number, boolean>>({})
+const aiCommentLoading = ref<Record<number, boolean>>({})
 
 const setError = (msg: string) => {
   errorMessage.value = msg
@@ -156,6 +200,8 @@ const loadData = async (keyword?: string) => {
     ])
     if (postRes.success) pendingPosts.value = postRes.data || []
     if (commentRes.success) pendingComments.value = commentRes.data || []
+    aiPostReviews.value = {}
+    aiCommentReviews.value = {}
   } catch (e) {
     console.error('加载待审核数据失败', e)
     setError('加载待审核数据失败，请检查登录状态或网络')
@@ -166,6 +212,7 @@ const approvePost = async (id: number) => {
   try {
     await adminService.approvePost(id)
     pendingPosts.value = pendingPosts.value.filter(p => p.id !== id)
+    delete aiPostReviews.value[id]
   } catch (e) {
     console.error('通过文章失败', e)
     setError('通过文章失败，请重试')
@@ -176,6 +223,7 @@ const rejectPost = async (id: number) => {
   try {
     await adminService.rejectPost(id)
     pendingPosts.value = pendingPosts.value.filter(p => p.id !== id)
+    delete aiPostReviews.value[id]
   } catch (e) {
     console.error('拒绝文章失败', e)
     setError('拒绝文章失败，请重试')
@@ -186,6 +234,7 @@ const approveComment = async (id: number) => {
   try {
     await adminService.approveComment(id)
     pendingComments.value = pendingComments.value.filter(c => c.id !== id)
+    delete aiCommentReviews.value[id]
   } catch (e) {
     console.error('通过评论失败', e)
     setError('通过评论失败，请重试')
@@ -196,9 +245,70 @@ const deleteComment = async (id: number) => {
   try {
     await adminService.deleteComment(id)
     pendingComments.value = pendingComments.value.filter(c => c.id !== id)
+    delete aiCommentReviews.value[id]
   } catch (e) {
     console.error('删除评论失败', e)
     setError('删除评论失败，请重试')
+  }
+}
+
+const getDecisionLabel = (decision?: ModerationDecision) => {
+  if (decision === 'APPROVE') return '通过'
+  if (decision === 'REJECT') return '驳回'
+  if (decision === 'REVIEW') return '需人工复核'
+  return '未知'
+}
+
+const getDecisionClass = (decision?: ModerationDecision) => {
+  if (decision === 'APPROVE') return 'approve'
+  if (decision === 'REJECT') return 'reject'
+  if (decision === 'REVIEW') return 'review'
+  return ''
+}
+
+const formatReasons = (reasons?: string[]) => {
+  if (!reasons || reasons.length === 0) return '未提供原因'
+  const map: Record<string, string> = {
+    blocklist_hit: '命中禁用关键词',
+    reviewlist_hit: '疑似广告/引流',
+    clean: '未发现明显风险',
+    manual_review_required: '需人工复核',
+    status_not_pending: '当前状态不是待审核'
+  }
+  return reasons.map(r => map[r] || r).join('、')
+}
+
+const reviewPostWithAi = async (id: number) => {
+  try {
+    aiPostLoading.value[id] = true
+    const res = await adminService.reviewPost(id)
+    if (res.success && res.data) {
+      aiPostReviews.value[id] = res.data
+    } else {
+      setError(res.message || 'AI审核失败，请重试')
+    }
+  } catch (e) {
+    console.error('AI审核文章失败', e)
+    setError('AI审核失败，请重试')
+  } finally {
+    aiPostLoading.value[id] = false
+  }
+}
+
+const reviewCommentWithAi = async (id: number) => {
+  try {
+    aiCommentLoading.value[id] = true
+    const res = await adminService.reviewComment(id)
+    if (res.success && res.data) {
+      aiCommentReviews.value[id] = res.data
+    } else {
+      setError(res.message || 'AI审核失败，请重试')
+    }
+  } catch (e) {
+    console.error('AI审核评论失败', e)
+    setError('AI审核失败，请重试')
+  } finally {
+    aiCommentLoading.value[id] = false
   }
 }
 
@@ -298,6 +408,46 @@ onMounted(() => {
 .row-actions {
   display: flex;
   gap: 8px;
+}
+
+.ai-row td {
+  background: rgba(248, 250, 252, 0.9);
+}
+
+.ai-result {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.ai-badge {
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-weight: 600;
+  border: 1px solid transparent;
+  color: var(--text-dark);
+  background: #f1f5f9;
+}
+
+.ai-badge.approve {
+  background: #ecfdf3;
+  color: #047857;
+  border-color: rgba(4, 120, 87, 0.2);
+}
+
+.ai-badge.reject {
+  background: #fef2f2;
+  color: #b91c1c;
+  border-color: rgba(185, 28, 28, 0.2);
+}
+
+.ai-badge.review {
+  background: #fff7ed;
+  color: #c2410c;
+  border-color: rgba(194, 65, 12, 0.2);
 }
 
 .pill-btn {

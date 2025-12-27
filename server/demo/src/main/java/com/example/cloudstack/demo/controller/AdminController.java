@@ -91,9 +91,13 @@ public class AdminController {
         String title = payload != null ? payload.get("title") : null;
         String content = payload != null ? payload.get("content") : null;
         String type = payload != null ? payload.get("type") : null;
-        int sentCount = messageService.broadcastAnnouncement(userId, title, content, type);
+        var ann = adminService.createAnnouncement(userId, title, content, type);
         Map<String, Object> result = new java.util.HashMap<>();
-        result.put("sentCount", sentCount);
+        result.put("id", ann.getId());
+        result.put("title", ann.getTitle());
+        result.put("content", ann.getContent());
+        result.put("type", ann.getType());
+        result.put("time", ann.getCreatedAt());
         return ResponseEntity.ok(ApiResponse.success("发布成功", result));
     }
 

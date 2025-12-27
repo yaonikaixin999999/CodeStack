@@ -107,10 +107,11 @@ public class BlogUserService {
         }
 
         // 检查状态
-        if (user.getStatus() != 1) {
-            log.warn("用户 {} 账号被禁用", user.getUsername());
+        if (user.getStatus() != null && user.getStatus() == -1) {
+            log.warn("用户 {} 账号被封禁", user.getUsername());
             throw new RuntimeException("账号已被禁用");
         }
+        // status == 0 (禁言) 允许登录，但后续写操作会被拦截
 
         // 更新登录时间
         user.setLastLoginAt(LocalDateTime.now());

@@ -38,11 +38,42 @@ api.interceptors.request.use(
 api.interceptors.response.use(
     response => response.data,
     error => {
-        if (error.response?.status === 401) {
-            // token 过期，清除登录状态
+        const status = error.response?.status
+        const msg = error.response?.data?.message || '请求失败'
+
+        if (status === 401) {
+            // 未登录或 token 过期
             localStorage.removeItem('blog_token')
             localStorage.removeItem('blog_user')
             window.location.href = '/login'
+        } else if (status === 403) {
+            const lowerMsg = msg.toLowerCase()
+            const isBanned = lowerMsg.includes('封禁') || lowerMsg.includes('禁用') || lowerMsg.includes('ban')
+            const isMuted = lowerMsg.includes('禁言') || lowerMsg.includes('mute')
+
+            if (isBanned) {
+                // 封禁：强制退出
+                localStorage.removeItem('blog_token')
+                localStorage.removeItem('blog_user')
+                try {
+                    alert(msg || '账号被封禁，已退出登录')
+                } catch (e) {
+                    /* ignore */
+                }
+                window.location.href = '/login'
+            } else if (isMuted) {
+                // 禁言：允许继续浏览，提示即可
+                try {
+                    alert(msg || '账号被禁言，暂时无法发布/评论')
+                } catch (e) {
+                    /* ignore */
+                }
+            } else {
+                // 其他 403，按封禁处理
+                localStorage.removeItem('blog_token')
+                localStorage.removeItem('blog_user')
+                window.location.href = '/login'
+            }
         }
         const message = error.response?.data?.message || '请求失败'
         return Promise.reject(new Error(message))
@@ -323,6 +354,12 @@ export interface SearchUser {
     avatar: string
 }
 
+export interface UserStatusChangeEvent {
+    userId: number
+    status: number
+    role?: string
+}
+
 // ============== API 服务 ==============
 
 export const blogService = {
@@ -369,6 +406,16 @@ export const blogService = {
         saveLoginInfo: (token: string, user: User) => {
             localStorage.setItem('blog_token', token)
             localStorage.setItem('blog_user', JSON.stringify(user))
+        },
+
+        // 创建用户 SSE 连接（用于状态变更通知）
+        createEventSource: () => {
+            const token = localStorage.getItem('blog_token') || localStorage.getItem('token')
+            if (!token) return null
+            const hostname = window.location.hostname
+            const base = hostname === 'localhost' || hostname === '127.0.0.1' ? 'localhost' : hostname
+            const url = `http://${base}:8082/api/blog/auth/stream?token=${encodeURIComponent(token)}`
+            return new EventSource(url)
         }
     },
 

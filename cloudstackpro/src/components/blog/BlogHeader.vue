@@ -96,9 +96,9 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, ref, onMounted, computed } from 'vue'
+import { defineComponent, ref, onMounted, onUnmounted, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { blogService, type User } from '@/services/blogService'
+import { blogService, type User, type UserStatusChangeEvent } from '@/services/blogService'
 
 export default defineComponent({
   name: 'BlogHeader',
@@ -110,6 +110,7 @@ export default defineComponent({
     const showUserMenu = ref(false)
     const showMobileMenu = ref(false)
     const currentUser = ref<User | null>(null)
+    const sse = ref<EventSource | null>(null)
     
     // 获取用户信息
     const loadUserInfo = () => {
@@ -151,9 +152,49 @@ export default defineComponent({
     const goBackToEditor = () => {
       router.push('/editor')
     }
-    
+
     onMounted(() => {
       loadUserInfo()
+      if (blogService.auth.isLoggedIn()) {
+        try {
+          const es = blogService.auth.createEventSource()
+          if (es) {
+            sse.value = es
+            es.addEventListener('user-status-changed', (evt: MessageEvent) => {
+              try {
+                const data = JSON.parse(evt.data) as UserStatusChangeEvent
+                if (!currentUser.value || data.userId !== currentUser.value.id) return
+
+                if (data.status === -1) {
+                  alert('账号已被封禁，将退出登录')
+                  blogService.auth.logout()
+                  currentUser.value = null
+                  es.close()
+                  router.push('/login')
+                } else if (data.status === 0) {
+                  alert('账号已被禁言，无法发布/评论等操作')
+                  // 保持登录，仅提示
+                }
+              } catch (e) {
+                // ignore malformed payload
+              }
+            })
+            es.onerror = () => {
+              es.close()
+              sse.value = null
+            }
+          }
+        } catch (e) {
+          // ignore SSE errors
+        }
+      }
+    })
+
+    onUnmounted(() => {
+      if (sse.value) {
+        sse.value.close()
+        sse.value = null
+      }
     })
     
     return {

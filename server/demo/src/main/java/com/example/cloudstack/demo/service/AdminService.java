@@ -2,12 +2,15 @@ package com.example.cloudstack.demo.service;
 
 import com.example.cloudstack.demo.model.entity.Comment;
 import com.example.cloudstack.demo.model.entity.Category;
+import com.example.cloudstack.demo.model.entity.Announcement;
 import com.example.cloudstack.demo.model.entity.Post;
 import com.example.cloudstack.demo.model.entity.User;
 import com.example.cloudstack.demo.repository.CategoryRepository;
 import com.example.cloudstack.demo.repository.CommentRepository;
+import com.example.cloudstack.demo.repository.AnnouncementRepository;
 import com.example.cloudstack.demo.repository.PostRepository;
 import com.example.cloudstack.demo.repository.UserRepository;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
@@ -20,25 +23,22 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 @Service
+@RequiredArgsConstructor
 public class AdminService {
     private final PostRepository postRepository;
     private final CommentRepository commentRepository;
     private final UserRepository userRepository;
     private final CategoryRepository categoryRepository;
+    private final AnnouncementRepository announcementRepository;
+    private final MessageService messageService;
 
     private final List<org.springframework.web.servlet.mvc.method.annotation.SseEmitter> emitters = Collections
             .synchronizedList(new ArrayList<>());
-
-    public AdminService(PostRepository postRepository, CommentRepository commentRepository,
-            UserRepository userRepository, CategoryRepository categoryRepository) {
-        this.postRepository = postRepository;
-        this.commentRepository = commentRepository;
-        this.userRepository = userRepository;
-        this.categoryRepository = categoryRepository;
-    }
+    private final Map<Long, List<org.springframework.web.servlet.mvc.method.annotation.SseEmitter>> userEmitters = new ConcurrentHashMap<>();
 
     public Map<String, Object> getDashboard(int recentLimit) {
         long totalPosts = postRepository.count();
@@ -94,8 +94,8 @@ public class AdminService {
         data.put("stats", stats);
         data.put("recentPosts", recentPostDtos);
         data.put("moderationQueue", queue);
-        data.put("metrics", Collections.emptyList());
-        data.put("announcements", Collections.emptyList());
+        data.put("metrics", buildLatestPostMetrics());
+        data.put("announcements", getLatestAnnouncements());
         return data;
     }
 
@@ -230,6 +230,63 @@ public class AdminService {
     }
 
     @Transactional
+    public Announcement createAnnouncement(Long userId, String title, String content, String type) {
+        String safeTitle = title != null ? title.trim() : "";
+        String safeContent = content != null ? content.trim() : "";
+        String safeType = (type != null && !type.trim().isEmpty()) ? type.trim() : "系统";
+
+        if (safeTitle.isEmpty() && safeContent.isEmpty()) {
+            throw new RuntimeException("公告标题和内容不能为空");
+        }
+
+        Announcement ann = Announcement.builder()
+                .title(safeTitle)
+                .content(safeContent)
+                .type(safeType)
+                .createdBy(userId)
+                .build();
+        ann = announcementRepository.save(ann);
+
+        // 仍然向所有用户发送站内信公告，保持原有行为
+        try {
+            messageService.broadcastAnnouncement(userId, safeTitle, safeContent, safeType);
+        } catch (Exception ignored) {
+            // 不因通知失败影响公告存储
+        }
+
+        broadcastRefresh();
+        return ann;
+    }
+
+    public List<Map<String, Object>> getLatestAnnouncements() {
+        List<Announcement> list = announcementRepository.findTop5ByOrderByCreatedAtDesc();
+        List<String> palette = List.of("#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6");
+
+        return list.stream().map((ann) -> {
+            Map<String, Object> m = new LinkedHashMap<>();
+            m.put("id", ann.getId());
+            m.put("title", ann.getTitle());
+            m.put("content", ann.getContent());
+            m.put("time", ann.getCreatedAt() != null ? ann.getCreatedAt().toString() : "");
+            m.put("tag", ann.getType() != null ? ann.getType() : "系统");
+
+            String typeLower = (ann.getType() != null ? ann.getType() : "系统").toLowerCase(Locale.ROOT);
+            String color;
+            if (typeLower.contains("安全")) {
+                color = "#ef4444";
+            } else if (typeLower.contains("更新") || typeLower.contains("版本")) {
+                color = "#3b82f6";
+            } else if (typeLower.contains("系统")) {
+                color = "#10b981";
+            } else {
+                color = palette.get((int) (ann.getId() % palette.size()));
+            }
+            m.put("color", color);
+            return m;
+        }).collect(Collectors.toList());
+    }
+
+    @Transactional
     public void approvePost(Long id) {
         Post p = postRepository.findById(id).orElseThrow();
         p.setStatus(1);
@@ -307,7 +364,7 @@ public class AdminService {
         userRepository.save(u);
         // 拒绝该用户所有待审核的文章
         postRepository.rejectPendingByUserId(id);
-        broadcastRefresh();
+        broadcastUserStatus(u);
     }
 
     @Transactional
@@ -315,7 +372,7 @@ public class AdminService {
         User u = userRepository.findById(id).orElseThrow();
         u.setStatus(-1);
         userRepository.save(u);
-        broadcastRefresh();
+        broadcastUserStatus(u);
     }
 
     @Transactional
@@ -323,7 +380,7 @@ public class AdminService {
         User u = userRepository.findById(id).orElseThrow();
         u.setStatus(1);
         userRepository.save(u);
-        broadcastRefresh();
+        broadcastUserStatus(u);
     }
 
     public String uploadAvatar(MultipartFile file, Long userId) throws IOException {
@@ -347,6 +404,27 @@ public class AdminService {
         return emitter;
     }
 
+    public org.springframework.web.servlet.mvc.method.annotation.SseEmitter subscribeUser(Long userId) {
+        org.springframework.web.servlet.mvc.method.annotation.SseEmitter emitter = new org.springframework.web.servlet.mvc.method.annotation.SseEmitter(
+                0L);
+        userEmitters.computeIfAbsent(userId, k -> Collections.synchronizedList(new ArrayList<>()))
+                .add(emitter);
+
+        emitter.onCompletion(() -> removeUserEmitter(userId, emitter));
+        emitter.onTimeout(() -> removeUserEmitter(userId, emitter));
+        return emitter;
+    }
+
+    private void removeUserEmitter(Long userId, org.springframework.web.servlet.mvc.method.annotation.SseEmitter emitter) {
+        List<org.springframework.web.servlet.mvc.method.annotation.SseEmitter> list = userEmitters.get(userId);
+        if (list != null) {
+            list.remove(emitter);
+            if (list.isEmpty()) {
+                userEmitters.remove(userId);
+            }
+        }
+    }
+
     public void broadcastRefresh() {
         synchronized (emitters) {
             Iterator<org.springframework.web.servlet.mvc.method.annotation.SseEmitter> it = emitters.iterator();
@@ -358,6 +436,49 @@ public class AdminService {
                 } catch (Exception ex) {
                     it.remove();
                 }
+            }
+        }
+    }
+
+    private void broadcastUserStatus(User user) {
+        Map<String, Object> payload = new LinkedHashMap<>();
+        payload.put("userId", user.getId());
+        payload.put("status", user.getStatus());
+        payload.put("role", user.getRole());
+
+        synchronized (emitters) {
+            Iterator<org.springframework.web.servlet.mvc.method.annotation.SseEmitter> it = emitters.iterator();
+            while (it.hasNext()) {
+                org.springframework.web.servlet.mvc.method.annotation.SseEmitter e = it.next();
+                try {
+                    e.send(org.springframework.web.servlet.mvc.method.annotation.SseEmitter.event()
+                            .name("user-status-changed")
+                            .data(payload));
+                } catch (Exception ex) {
+                    it.remove();
+                }
+            }
+        }
+
+        // 兼容已有刷新逻辑
+        broadcastRefresh();
+
+        // 推送给目标用户
+        List<org.springframework.web.servlet.mvc.method.annotation.SseEmitter> targets = userEmitters.get(user.getId());
+        if (targets != null) {
+            Iterator<org.springframework.web.servlet.mvc.method.annotation.SseEmitter> it = targets.iterator();
+            while (it.hasNext()) {
+                org.springframework.web.servlet.mvc.method.annotation.SseEmitter e = it.next();
+                try {
+                    e.send(org.springframework.web.servlet.mvc.method.annotation.SseEmitter.event()
+                            .name("user-status-changed")
+                            .data(payload));
+                } catch (Exception ex) {
+                    it.remove();
+                }
+            }
+            if (targets.isEmpty()) {
+                userEmitters.remove(user.getId());
             }
         }
     }
@@ -396,5 +517,33 @@ public class AdminService {
             m.put("value", entry.getValue());
             return m;
         }).collect(Collectors.toList());
+    }
+
+    private List<Map<String, Object>> buildLatestPostMetrics() {
+        List<Post> latest = postRepository.findAll(PageRequest.of(0, 5, Sort.by(Sort.Direction.DESC, "createdAt")))
+                .getContent();
+        return latest.stream().map(p -> {
+            Map<String, Object> m = new LinkedHashMap<>();
+            m.put("label", trimTitle(p.getTitle()));
+            m.put("value", statusLabel(p.getStatus()));
+            m.put("progress", statusToProgress(p.getStatus()));
+            m.put("trend", 0); // 暂无环比趋势，先置 0
+            return m;
+        }).collect(Collectors.toList());
+    }
+
+    private int statusToProgress(Integer status) {
+        if (status == null) return 20;
+        return switch (status) {
+            case 1 -> 100; // 已发布
+            case 2 -> 50; // 待审核
+            case 3 -> 0; // 已下架/驳回
+            default -> 20; // 草稿
+        };
+    }
+
+    private String trimTitle(String title) {
+        if (title == null) return "未命名文章";
+        return title.length() > 18 ? title.substring(0, 18) + "…" : title;
     }
 }

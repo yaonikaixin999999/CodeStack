@@ -196,7 +196,12 @@ router.beforeEach((to, from, next) => {
     next('/admin')
     return
   }
+  // 管理员访问博客路由时，允许写文章，否则一律回后台
   if (currentUser && isAdminUser && isBlogRoute && !(to.meta as any)?.requiresAdmin) {
+    if (to.name === 'BlogWrite') {
+      next()
+      return
+    }
     next('/admin')
     return
   }

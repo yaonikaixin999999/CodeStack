@@ -63,7 +63,7 @@ export interface DashboardPayload {
   recentPosts?: AdminPost[]
   moderationQueue?: ModerationItem[]
   metrics?: { label: string; value: string; progress: number; trend: number }[]
-  announcements?: { id: number; title: string; time: string; tag: string; color: string }[]
+  announcements?: { id: number; title: string; time: string; tag: string; color: string; content?: string }[]
 }
 
 export interface ChartPoint {
@@ -86,6 +86,21 @@ export interface ChartPayload {
   categorySlices?: ChartSlice[]
 }
 
+export type ModerationDecision = 'APPROVE' | 'REJECT' | 'REVIEW'
+
+export interface AiModerationResult {
+  targetType?: string
+  targetId?: number
+  decision?: ModerationDecision
+  score?: number
+  reasons?: string[]
+  matchedKeywords?: string[]
+  applied?: boolean
+  oldStatus?: number
+  newStatus?: number
+  provider?: string
+}
+
 export interface AdminUser {
   id: number
   username: string
@@ -94,6 +109,12 @@ export interface AdminUser {
   status?: number
   lastLoginAt?: string
   avatar?: string
+}
+
+export interface UserStatusChangeEvent {
+  userId: number
+  status: number
+  role?: string
 }
 
 export const adminService = {
@@ -174,5 +195,35 @@ export const adminService = {
       headers: { 'Content-Type': 'multipart/form-data' }
     })
     return res.data
+  },
+
+  async reviewPost(id: number) {
+    const res = await api.post<{ success: boolean; data?: AiModerationResult; message?: string }>(
+      `/ai/posts/${id}/review`,
+      null,
+      { params: { apply: false } }
+    )
+    return res.data
+  },
+
+  async reviewComment(id: number) {
+    const res = await api.post<{ success: boolean; data?: AiModerationResult; message?: string }>(
+      `/ai/comments/${id}/review`,
+      null,
+      { params: { apply: false } }
+    )
+    return res.data
+  },
+
+  async reviewText(payload: { type?: string; title?: string; content: string }) {
+    const res = await api.post<{ success: boolean; data?: AiModerationResult; message?: string }>(`/ai/review`, payload)
+    return res.data
+  },
+
+  createEventSource(token: string) {
+    const hostname = window.location.hostname
+    const base = hostname === 'localhost' || hostname === '127.0.0.1' ? 'localhost' : hostname
+    const url = `http://${base}:8082/api/admin/stream?token=${encodeURIComponent(token)}`
+    return new EventSource(url)
   }
 }

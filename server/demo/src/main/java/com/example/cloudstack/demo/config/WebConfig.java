@@ -40,7 +40,8 @@ public class WebConfig implements WebMvcConfigurer {
                                                 "/api/comments/*/like",
                                                 "/api/users/*/follow",
                                                 "/api/notifications/**",
-                                                "/api/bookmarks/**")
+                                                "/api/bookmarks/**",
+                                                "/api/blog/auth/stream")
                                 .excludePathPatterns(
                                                 "/api/auth/login",
                                                 "/api/auth/register",
