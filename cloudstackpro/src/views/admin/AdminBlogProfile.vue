@@ -134,6 +134,11 @@
                   </div>
                 </router-link>
               </article>
+              <div v-if="!userPosts.length" class="empty-state">
+                <img src="@/assets/blog/icons/comment.svg" alt="空空如也" />
+                <p class="empty-title">还没有发布文章</p>
+                <p class="empty-desc">去创作一篇吧</p>
+              </div>
             </div>
 
             <div class="list" v-if="activeTab === 'bookmarks'">
@@ -157,10 +162,15 @@
                     </div>
                   </div>
                 </div>
-                <button class="icon-btn" @click="deleteBookmark(post.id)">
+                <button class="icon-btn" @click="removeBookmark(post.id)">
                   <img src="@/assets/blog/icons/close.svg" alt="删除收藏" />
                 </button>
               </article>
+              <div v-if="!bookmarks.length" class="empty-state">
+                <img src="@/assets/blog/icons/bookmark.svg" alt="空空如也" />
+                <p class="empty-title">还没有收藏</p>
+                <p class="empty-desc">去多看看内容，像 B 站一样点个收藏吧</p>
+              </div>
             </div>
 
             <div class="list grid" v-if="activeTab === 'following'">
@@ -176,6 +186,11 @@
                   {{ user.isFollowed ? '已关注' : '关注' }}
                 </button>
               </div>
+              <div v-if="!following.length" class="empty-state">
+                <img src="@/assets/blog/icons/user.svg" alt="空空如也" />
+                <p class="empty-title">还没有关注</p>
+                <p class="empty-desc">去发现感兴趣的作者，关注他们的更新吧</p>
+              </div>
             </div>
 
             <div class="list grid" v-if="activeTab === 'followers'">
@@ -190,6 +205,11 @@
                   <img :src="user.isFollowed ? checkIcon : plusIcon" alt="关注" />
                   {{ user.isFollowed ? '已关注' : '关注' }}
                 </button>
+              </div>
+              <div v-if="!followers.length" class="empty-state">
+                <img src="@/assets/blog/icons/heart.svg" alt="空空如也" />
+                <p class="empty-title">还没有粉丝</p>
+                <p class="empty-desc">多发布高质量内容，吸引更多粉丝吧</p>
               </div>
             </div>
           </section>
@@ -739,8 +759,20 @@ export default defineComponent({
       }
     }
 
-    const deleteBookmark = (id: number) => {
-      bookmarks.value = bookmarks.value.filter(b => b.id !== id)
+    const removeBookmark = async (id: number) => {
+      if (!id) return
+      try {
+        await blogService.posts.unbookmark(id)
+      } catch (err) {
+        console.error('取消收藏失败', err)
+      } finally {
+        const before = bookmarks.value.length
+        bookmarks.value = bookmarks.value.filter(b => b.id !== id)
+        const delta = bookmarks.value.length - before
+        if (delta !== 0) {
+          contentTabs.value[1].count = Math.max(0, Number(contentTabs.value[1].count || 0) + delta)
+        }
+      }
     }
 
     onMounted(() => {
@@ -770,7 +802,7 @@ export default defineComponent({
       tags,
       toggleFollowProfile,
       toggleFollowUser,
-      deleteBookmark,
+      removeBookmark,
       triggerAvatar,
       onAvatarChange,
       avatarInput,
@@ -1161,6 +1193,38 @@ export default defineComponent({
 .list.grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 32px 20px;
+  background: #f8fbff;
+  border-radius: 12px;
+  color: #6b7280;
+  text-align: center;
+  box-shadow: inset 0 0 0 1px #eef2f7;
+}
+
+.empty-state img {
+  width: 48px;
+  height: 48px;
+  opacity: 0.6;
+}
+
+.empty-title {
+  font-size: 16px;
+  color: #1f2d3d;
+  margin: 0;
+}
+
+.empty-desc {
+  font-size: 13px;
+  margin: 0;
+  color: #6b7280;
 }
 
 .list-item {

@@ -116,9 +116,11 @@
             </div>
 
             <div class="no-results" v-if="hasSearched && searchResults.length === 0">
-              <img src="@/assets/blog/icons/search.svg" alt="无结果" class="no-results-icon" />
-              <h3>空空如也</h3>
-              <p>没有匹配到相关内容，换个关键词试试</p>
+              <div class="empty-state">
+                <img src="@/assets/blog/icons/search.svg" alt="空空如也" class="empty-icon" />
+                <p class="empty-title">没有匹配的结果</p>
+                <p class="empty-desc">换个关键词或检查拼写</p>
+              </div>
             </div>
           </section>
 
@@ -197,6 +199,15 @@ export default defineComponent({
 
     const searchResults = ref<any[]>([])
     const recommendPosts = ref<any[]>([])
+    const filterByKeyword = (items: any[], keyword: string) => {
+      const kw = keyword.trim().toLowerCase()
+      if (!kw) return items
+      return items.filter(
+        item =>
+          (item.title && item.title.toLowerCase().includes(kw)) ||
+          (item.excerpt && item.excerpt.toLowerCase().includes(kw))
+      )
+    }
 
     const loadHotTags = async () => {
       try {
@@ -262,7 +273,7 @@ export default defineComponent({
         })
 
         if (response.success && response.data) {
-          searchResults.value = response.data.content.map(post => ({
+          const mapped = response.data.content.map(post => ({
             id: post.id,
             title: post.title,
             excerpt: post.excerpt || post.content?.substring(0, 150) || '',
@@ -275,8 +286,10 @@ export default defineComponent({
             views: formatCount(post.viewCount || 0)
           }))
 
-          totalResults.value = response.data.totalElements || searchResults.value.length
-          hasMore.value = !response.data.last
+          const filtered = filterByKeyword(mapped, keyword)
+          searchResults.value = filtered
+          totalResults.value = filtered.length
+          hasMore.value = filtered.length > 0 && !response.data.last
 
           filterTabs.value[0].count = totalResults.value
           filterTabs.value[1].count = totalResults.value
@@ -344,7 +357,7 @@ export default defineComponent({
         })
 
         if (response.success && response.data) {
-          const newResults = response.data.content.map(post => ({
+          const mapped = response.data.content.map(post => ({
             id: post.id,
             title: post.title,
             excerpt: post.excerpt || '',
@@ -357,8 +370,13 @@ export default defineComponent({
             views: formatCount(post.viewCount || 0)
           }))
 
-          searchResults.value.push(...newResults)
-          hasMore.value = !response.data.last
+          const filtered = filterByKeyword(mapped, searchQuery.value)
+          if (filtered.length > 0) {
+            searchResults.value.push(...filtered)
+            hasMore.value = !response.data.last
+          } else {
+            hasMore.value = false
+          }
         }
       } catch (error) {
         console.error('加载更多失败:', error)
@@ -832,26 +850,41 @@ export default defineComponent({
 }
 
 .no-results {
+  display: flex;
+  justify-content: center;
+  padding: 40px 0 20px;
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 28px 20px;
+  background: #f8fbff;
+  border-radius: 12px;
+  box-shadow: inset 0 0 0 1px #eef2f7;
+  color: #6b7280;
   text-align: center;
-  padding: 60px 20px;
+  max-width: 360px;
 }
 
-.no-results-icon {
-  width: 80px;
-  height: 80px;
-  opacity: 0.3;
-  margin-bottom: 20px;
+.empty-icon {
+  width: 48px;
+  height: 48px;
+  opacity: 0.6;
 }
 
-.no-results h3 {
-  font-size: 18px;
-  color: var(--text-dark);
-  margin-bottom: 8px;
+.empty-title {
+  margin: 0;
+  font-size: 16px;
+  color: #1f2d3d;
 }
 
-.no-results p {
-  font-size: 14px;
-  color: var(--text-muted);
+.empty-desc {
+  margin: 0;
+  font-size: 13px;
+  color: #6b7280;
 }
 
 .recommend-section {

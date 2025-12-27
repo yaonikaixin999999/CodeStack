@@ -135,6 +135,11 @@
                   </div>
                 </router-link>
               </article>
+              <div v-if="!userPosts.length" class="empty-state">
+                <img src="@/assets/blog/icons/comment.svg" alt="空空如也" />
+                <p class="empty-title">还没有发布文章</p>
+                <p class="empty-desc">去写一篇吧，像哔哩哔哩专栏一样分享你的知识</p>
+              </div>
             </div>
             
             <!-- 收藏列表 -->
@@ -160,6 +165,11 @@
                   </div>
                 </router-link>
               </article>
+              <div v-if="!bookmarks.length" class="empty-state">
+                <img src="@/assets/blog/icons/bookmark.svg" alt="空空如也" />
+                <p class="empty-title">还没有收藏</p>
+                <p class="empty-desc">多看看内容，喜欢就点个收藏吧</p>
+              </div>
             </div>
             
             <!-- 关注列表 -->
@@ -180,6 +190,11 @@
                   {{ user.isFollowed ? '已关注' : '关注' }}
                 </button>
               </div>
+              <div v-if="!following.length" class="empty-state">
+                <img src="@/assets/blog/icons/user.svg" alt="空空如也" />
+                <p class="empty-title">还没有关注</p>
+                <p class="empty-desc">去发现感兴趣的作者，关注他们的更新吧</p>
+              </div>
             </div>
             
             <!-- 粉丝列表 -->
@@ -199,6 +214,11 @@
                 >
                   {{ user.isFollowed ? '已关注' : '关注' }}
                 </button>
+              </div>
+              <div v-if="!followers.length" class="empty-state">
+                <img src="@/assets/blog/icons/heart.svg" alt="空空如也" />
+                <p class="empty-title">还没有粉丝</p>
+                <p class="empty-desc">多发布高质量内容，吸引更多粉丝吧</p>
               </div>
             </div>
           </section>
@@ -1175,6 +1195,37 @@ export default defineComponent({
 .follow-btn:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 32px 16px;
+  background: #f8fbff;
+  border-radius: 12px;
+  color: #6b7280;
+  text-align: center;
+  box-shadow: inset 0 0 0 1px #eef2f7;
+}
+
+.empty-state img {
+  width: 48px;
+  height: 48px;
+  opacity: 0.6;
+}
+
+.empty-title {
+  margin: 0;
+  font-size: 16px;
+  color: #1f2d3d;
+}
+
+.empty-desc {
+  margin: 0;
+  font-size: 13px;
+  color: #6b7280;
 }
 
 

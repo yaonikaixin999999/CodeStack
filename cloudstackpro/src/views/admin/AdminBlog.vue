@@ -63,20 +63,27 @@
               <p>加载中...</p>
             </div>
 
-            <div v-else class="posts-grid">
-              <AdminPostCard
-                v-for="(post, index) in displayedPosts"
-                :key="post.id"
-                :post="post"
-                :featured="index === 0"
-                :postRouteBase="postRouteBase"
-                :highlightKeyword="activeKeyword"
-                :canDelete="true"
-                @like="handleLike"
-                @bookmark="handleBookmark"
-                @share="handleShare"
-                @delete="handleDelete"
-              />
+            <div v-else>
+              <div v-if="!displayedPosts.length" class="empty-state">
+                <img src="@/assets/blog/icons/search.svg" alt="空空如也" class="empty-icon" />
+                <p class="empty-title">没有匹配的结果</p>
+                <p class="empty-desc">换个关键词或清空筛选</p>
+              </div>
+              <div v-else class="posts-grid">
+                <AdminPostCard
+                  v-for="(post, index) in displayedPosts"
+                  :key="post.id"
+                  :post="post"
+                  :featured="index === 0"
+                  :postRouteBase="postRouteBase"
+                  :highlightKeyword="activeKeyword"
+                  :canDelete="true"
+                  @like="handleLike"
+                  @bookmark="handleBookmark"
+                  @share="handleShare"
+                  @delete="handleDelete"
+                />
+              </div>
             </div>
 
             <div class="load-more" v-if="canLoadMore">
@@ -236,7 +243,7 @@ const loadPosts = async () => {
 
     if (activeCategory.value !== 'all') {
       const cat = categories.value.find(c => c.id === activeCategory.value)
-      const targetId = cat?.dbId ?? cat?.id
+      const targetId = cat?.dbId // 只有后端返回的分类才有 dbId
       if (targetId) {
         const catRes = await blogService.categories.getPosts(targetId, currentPage.value, 10)
         if (catRes.success && catRes.data) {
@@ -246,6 +253,9 @@ const loadPosts = async () => {
           totalPages.value = pageData.totalPages
         }
         return
+      } else {
+        // 本地占位分类（如“前端/后端”）没有映射，回退到全部文章
+        activeCategory.value = 'all'
       }
     }
 
@@ -660,6 +670,37 @@ onMounted(async () => {
   width: 18px;
   height: 18px;
   opacity: 0.7;
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 32px 20px;
+  background: #f8fbff;
+  border-radius: 12px;
+  box-shadow: inset 0 0 0 1px #eef2f7;
+  color: #6b7280;
+  text-align: center;
+}
+
+.empty-icon {
+  width: 48px;
+  height: 48px;
+  opacity: 0.6;
+}
+
+.empty-title {
+  margin: 0;
+  font-size: 16px;
+  color: #1f2d3d;
+}
+
+.empty-desc {
+  margin: 0;
+  font-size: 13px;
+  color: #6b7280;
 }
 
 @media (max-width: 1024px) {

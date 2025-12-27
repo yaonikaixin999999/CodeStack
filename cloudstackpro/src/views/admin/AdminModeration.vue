@@ -42,7 +42,7 @@
                 </tr>
               </thead>
               <tbody>
-                <template v-for="post in pendingPosts" :key="post.id">
+                <template v-for="post in filteredPosts" :key="post.id">
                   <tr>
                     <td class="title-cell">
                       <span class="dot" />
@@ -86,8 +86,17 @@
                     </td>
                   </tr>
                 </template>
-                <tr v-if="pendingPosts.length === 0">
-                  <td colspan="5" class="empty-cell">暂无待审核文章</td>
+                <tr v-if="filteredPosts.length === 0">
+                  <td colspan="5" class="empty-cell">
+                    <template v-if="heroKeyword.trim()">
+                      <div class="empty-state">
+                        <img src="@/assets/blog/icons/search.svg" alt="空空如也" class="empty-icon" />
+                        <p class="empty-title">没有匹配的文章</p>
+                        <p class="empty-desc">换个关键词，或清空搜索查看全部待审文章</p>
+                      </div>
+                    </template>
+                    <template v-else>暂无待审核文章</template>
+                  </td>
                 </tr>
               </tbody>
             </table>
@@ -112,7 +121,7 @@
                 </tr>
               </thead>
               <tbody>
-                <template v-for="comment in pendingComments" :key="comment.id">
+                <template v-for="comment in filteredComments" :key="comment.id">
                   <tr>
                     <td>
                       <router-link
@@ -150,8 +159,17 @@
                     </td>
                   </tr>
                 </template>
-                <tr v-if="pendingComments.length === 0">
-                  <td colspan="4" class="empty-cell">暂无待审核评论</td>
+                <tr v-if="filteredComments.length === 0">
+                  <td colspan="4" class="empty-cell">
+                    <template v-if="heroKeyword.trim()">
+                      <div class="empty-state">
+                        <img src="@/assets/blog/icons/search.svg" alt="空空如也" class="empty-icon" />
+                        <p class="empty-title">没有匹配的评论</p>
+                        <p class="empty-desc">换个关键词，或清空搜索查看全部待审评论</p>
+                      </div>
+                    </template>
+                    <template v-else>暂无待审核评论</template>
+                  </td>
                 </tr>
               </tbody>
             </table>
@@ -163,7 +181,7 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { onMounted, ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { userService } from '@/services/userService'
 import { adminService, type AdminComment, type AdminPost, type AiModerationResult, type ModerationDecision } from '@/services/adminService'
@@ -188,7 +206,7 @@ const setError = (msg: string) => {
 }
 
 const goSearchHero = () => {
-  if (!heroKeyword.value.trim()) return
+  // 空关键字时显示全部
   loadData(heroKeyword.value.trim())
 }
 
@@ -311,6 +329,26 @@ const reviewCommentWithAi = async (id: number) => {
     aiCommentLoading.value[id] = false
   }
 }
+
+const filteredPosts = computed(() => {
+  const kw = heroKeyword.value.trim().toLowerCase()
+  if (!kw) return pendingPosts.value
+  return pendingPosts.value.filter(p => {
+    const title = (p.title || '').toLowerCase()
+    const author = (p.nickname || p.username || '').toLowerCase()
+    return title.includes(kw) || author.includes(kw)
+  })
+})
+
+const filteredComments = computed(() => {
+  const kw = heroKeyword.value.trim().toLowerCase()
+  if (!kw) return pendingComments.value
+  return pendingComments.value.filter(c => {
+    const content = (c.content || '').toLowerCase()
+    const user = (c.username || '').toLowerCase()
+    return content.includes(kw) || user.includes(kw)
+  })
+})
 
 onMounted(() => {
   if (isAdmin) {
@@ -488,6 +526,35 @@ onMounted(() => {
   text-align: center;
   color: var(--text-muted);
   padding: 20px 0;
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 20px 12px;
+  background: #f8fbff;
+  border-radius: 12px;
+  box-shadow: inset 0 0 0 1px #eef2f7;
+}
+
+.empty-icon {
+  width: 42px;
+  height: 42px;
+  opacity: 0.6;
+}
+
+.empty-title {
+  margin: 0;
+  font-size: 15px;
+  color: #1f2d3d;
+}
+
+.empty-desc {
+  margin: 0;
+  font-size: 13px;
+  color: #6b7280;
 }
 
 .notice-card {
