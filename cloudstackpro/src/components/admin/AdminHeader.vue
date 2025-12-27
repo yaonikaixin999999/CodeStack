@@ -47,7 +47,7 @@
         <div class="user-actions">
           <button class="action-btn notification-btn" @click="goChat">
             <img src="@/assets/blog/icons/comment.svg" alt="消息" class="action-icon" />
-            <span class="notification-badge">3</span>
+            <span v-if="unreadCount > 0" class="notification-dot"></span>
           </button>
 
           <div class="user-menu" @click="toggleUserMenu">
@@ -116,6 +116,7 @@ export default defineComponent({
     const searchQuery = ref('')
     const showUserMenu = ref(false)
     const showMobileMenu = ref(false)
+    const unreadCount = ref(0)
     const avatarSrc = ref(
       props.avatar ||
         (localStorage.getItem('blog_user') ? JSON.parse(localStorage.getItem('blog_user') || '{}').avatar : '') ||
@@ -161,6 +162,7 @@ export default defineComponent({
     onMounted(() => {
       refreshAvatar()
       syncFromServer()
+      loadUnreadCount()
       window.addEventListener('avatar-updated', handleAvatarEvent)
       window.addEventListener('storage', handleAvatarEvent)
     })
@@ -212,6 +214,15 @@ export default defineComponent({
       router.push('/admin/messages')
     }
 
+    const loadUnreadCount = async () => {
+      try {
+        const res = await blogService.notifications.getUnreadCount()
+        unreadCount.value = (res as any)?.data ?? 0
+      } catch {
+        unreadCount.value = 0
+      }
+    }
+
     return {
       searchQuery,
       showUserMenu,
@@ -222,7 +233,8 @@ export default defineComponent({
       toggleMobileMenu,
       handleLogout,
       goChat,
-      avatar: avatarSrc
+      avatar: avatarSrc,
+      unreadCount
     }
   }
 })
@@ -413,21 +425,15 @@ export default defineComponent({
   opacity: 0.7;
 }
 
-.notification-badge {
+.notification-dot {
   position: absolute;
-  top: 4px;
-  right: 4px;
-  min-width: 16px;
-  height: 16px;
-  padding: 0 4px;
+  top: 6px;
+  right: 6px;
+  width: 10px;
+  height: 10px;
   background: #ff4757;
-  color: white;
-  font-size: 10px;
-  font-weight: 600;
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  border-radius: 50%;
+  box-shadow: 0 0 0 2px white;
 }
 
 .user-menu {
