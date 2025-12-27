@@ -199,6 +199,9 @@
 import { ref, computed, watch, onMounted, onUnmounted, nextTick ,onBeforeUnmount} from 'vue'
 import axios from 'axios'
 import * as monaco from 'monaco-editor'
+// 预先引入语言包，避免运行时按需加载 chunk 失败
+import 'monaco-editor/esm/vs/basic-languages/javascript/javascript.contribution'
+import 'monaco-editor/esm/vs/language/typescript/monaco.contribution'
 // import loader from '@monaco-editor/loader'
 
 // API基础URL - 动态获取
@@ -223,6 +226,7 @@ let ydoc: Y.Doc | null = null
 let yText: Y.Text | null = null
 let provider: WebsocketProvider | null = null
 let monacoBinding: MonacoBinding | null = null
+let hasInitializedYDoc = false
 
 // WebSocket 连接
 // const provider = new WebsocketProvider('ws://yaonikaixin999999.store:1234', 'my-room', ydoc)
@@ -384,6 +388,7 @@ const createYjsConnection = (filePath: string) => {
   // 创建新的Yjs文档和连接
   ydoc = new Y.Doc()
   yText = ydoc.getText('monaco')
+  hasInitializedYDoc = false
   // 动态获取 Yjs WebSocket URL
   const getYjsUrl = () => {
     const hostname = window.location.hostname;
@@ -407,10 +412,33 @@ const createYjsConnection = (filePath: string) => {
   // 监听同步状态
   provider.on('sync', (isSynced: boolean) => {
     console.log(`文件 ${filePath} 同步状态:`, isSynced ? '已同步' : '同步中')
-    if (isSynced) {
+    if (isSynced && yText && editor) {
       // 同步完成后，如果Yjs文档为空且本地有内容，则初始化Yjs文档
       const yjsContent = yText?.toString() || ''
       const localContent = fileContents.value[filePath] || ''
+
+      // 首次同步：用服务器文件内容作为唯一真源，重置 Yjs，避免多客户端同时注入造成重复
+      if (!hasInitializedYDoc) {
+        hasInitializedYDoc = true
+        isReceivingRemoteChange.value = true
+        ydoc!.transact(() => {
+          yText.delete(0, yText.length)
+          if (localContent) {
+            yText.insert(0, localContent)
+          }
+        })
+        fileContents.value[filePath] = localContent || ''
+        emit('update:fileContents', fileContents.value)
+        emit('update:editorContent', localContent || '')
+        editor.setValue(localContent || '')
+        if (!monacoBinding) {
+          createMonacoBinding()
+        }
+        setTimeout(() => {
+          isReceivingRemoteChange.value = false
+        }, 50)
+        return
+      }
       
       if (!yjsContent && localContent && editor && yText) {
         console.log('用本地内容初始化Yjs文档')
@@ -425,9 +453,7 @@ const createYjsConnection = (filePath: string) => {
         console.log('用Yjs内容更新本地文档')
         isReceivingRemoteChange.value = true
         fileContents.value[filePath] = yjsContent
-        if (editor) {
-          editor.setValue(yjsContent)
-        }
+        // 由 MonacoBinding 自动更新编辑器，无需再次 setValue（避免回声）
         emit('update:fileContents', fileContents.value)
         setTimeout(() => {
           isReceivingRemoteChange.value = false
@@ -487,9 +513,7 @@ const createYjsConnection = (filePath: string) => {
   })
   
   // 如果编辑器已存在，创建新的绑定
-  if (editor && yText) {
-    createMonacoBinding()
-  }
+  // 延后到 sync 完成后再绑定，避免初始内容双向重复
 }
 
 // 添加颜色生成函数
@@ -936,83 +960,28 @@ const handleKeyDown = (e: KeyboardEvent) => {
   }
 }
 
-// 智能防抖发送内容变更
-const smartDebouncedSendContentChange = debounce((content: string) => {
-  if (!props.isReceivingRemoteChange && activeFile.value) {
-    emit('collaboration-content-change', content)
-  }
+// 智能防抖发送内容变更（已禁用，避免与 Yjs 双通道重复）
+const smartDebouncedSendContentChange = debounce((_content: string) => {
+  /* no-op */
 }, 800)
 
-// 处理协作内容更新
+// 处理协作内容更新（仅更新缓存，避免重复 setValue 回声）
 const handleRemoteContentChange = (change: FileChange) => {
   // 只处理当前活动文件的变更，且不是自己发送的
-  if (change.filePath === activeFile.value && 
+  if (change.filePath === activeFile.value &&
       change.userId !== collaborationService.getCurrentUser().userId) {
     
     console.log('收到远程内容变更:', change)
     
-    // 设置接收远程变更标志
     isReceivingRemoteChange.value = true
     lastRemoteChangeTime.value = Date.now()
 
-    // 获取当前光标位置
-    let currentPosition: monaco.Position | null = null
-    let currentSelection: monaco.Selection | null = null
-    
-    if (editor) {
-      currentPosition = editor.getPosition()
-      currentSelection = editor.getSelection()
-    }
-
-    // 更新状态
+    // 仅更新本地缓存，Yjs/MonacoBinding 会负责把内容同步到编辑器
     fileContents.value[activeFile.value] = change.content
     emit('update:fileContents', fileContents.value)
     emit('update:editorContent', change.content)
 
-    // 延迟更新编辑器内容，避免干扰用户输入
     setTimeout(() => {
-      if (editor) {
-        const currentEditorContent = editor.getValue()
-        if (currentEditorContent !== change.content) {
-          // 保存当前光标和选择状态
-          const positionToRestore = currentPosition || editor.getPosition()
-          const selectionToRestore = currentSelection || editor.getSelection()
-
-          // 更新内容
-          editor.setValue(change.content)
-
-          // 尝试恢复光标位置
-          if (positionToRestore) {
-            try {
-              const model = editor.getModel()
-              if (model) {
-                const lineCount = model.getLineCount()
-                const maxLine = Math.min(positionToRestore.lineNumber, lineCount)
-                const lineLength = model.getLineLength(maxLine)
-                const maxColumn = Math.min(positionToRestore.column, lineLength + 1)
-
-                editor.setPosition({
-                  lineNumber: maxLine,
-                  column: maxColumn
-                })
-              }
-            } catch (error) {
-              console.warn('无法恢复光标位置:', error)
-            }
-          }
-
-          // 尝试恢复选择
-          if (selectionToRestore) {
-            try {
-              editor.setSelection(selectionToRestore)
-            } catch (error) {
-              console.warn('无法恢复选择状态:', error)
-            }
-          }
-        }
-      }
-
-      // 清除接收远程变更标志
       isReceivingRemoteChange.value = false
     }, 100)
   }
@@ -1103,8 +1072,8 @@ watch(() => activeFile.value, async (newFile, oldFile) => {
       updateEditorLanguage(getLanguageFromFileName(newFile))
     }
 
-    // 加入Socket.IO协作房间（用于状态管理）
-    collaborationService.joinFileCollaboration(newFile)
+    // 不再加入 Socket 协作房间，避免与 Yjs 双通道重复
+    // collaborationService.joinFileCollaboration(newFile)
   } else {
     // 没有活动文件时，清理连接
     if (monacoBinding) {
@@ -1196,9 +1165,9 @@ onMounted(async () => {
   // 监听键盘输入
   editor.onKeyDown(handleUserTyping)
 
-  // 设置协作服务事件监听器（用于状态管理，不是内容同步）
-  collaborationService.onContentChange(handleRemoteContentChange)
-  collaborationService.onCollaboratorsUpdate(handleCollaboratorsUpdate)
+  // 协作状态改由 Yjs awareness 维护，避免双通道重复；不再订阅 Socket 内容通道
+  // collaborationService.onContentChange(handleRemoteContentChange)
+  // collaborationService.onCollaboratorsUpdate(handleCollaboratorsUpdate)
 
   console.log('Monaco编辑器创建完成')
   
